@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网卡流量监控 - 实时统计</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="chart.min.js"></script>
+    <script src="chartjs-adapter-date-fns.min.js"></script>
+    <style>
+        .entry-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding: 14px 18px;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #eff6ff, #f8fbff);
+        }
+
+        .entry-banner strong {
+            display: inline-block;
+            margin-right: 12px;
+            color: #1d4ed8;
+        }
+
+        .entry-banner span {
+            color: #334155;
+        }
+
+        .entry-banner a {
+            flex-shrink: 0;
+            color: #1d4ed8;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .entry-banner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SecFlow</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">总览</a></li>
+                <li><a href="analyzer.html" class="nav-link">威胁检测</a></li>
+                <li><a href="report.html" class="nav-link">行为分析</a></li>
+                <li><a href="lan_monitor.html" class="nav-link">局域网监控</a></li>
+                <li><a href="nic_traffic.html" class="nav-link active">网卡流量</a></li>
+                <li><a href="traffic_monitor.html" class="nav-link">流量监控</a></li>
+                <li><a href="website_security.html" class="nav-link">网站安全</a></li>
+                <li><a href="settings.html" class="nav-link">设置</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header fade-in-up">
+            <h1>网卡流量监控</h1>
+            <p class="subtitle">实时监控网络接口流量，支持历史数据查询和统计分析</p>
+        </div>
+
+        <div class="entry-banner fade-in-up">
+            <div>
+                <strong>主线入口</strong>
+                <span>当前页面是推荐使用的网卡流量监控入口，后续前端能力以这里为主线继续收敛。</span>
+            </div>
+            <a href="traffic_monitor.html">查看兼容入口</a>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="card fade-in-up">
+            <div class="card-header">
+                <h3>控制面板</h3>
+            </div>
+            <div class="card-body">
+                <div class="control-grid">
+                    <div class="control-group">
+                        <label>选择网卡（可多选）</label>
+                        <div id="nicList" class="nic-checkbox-group">
+                            <p class="text-muted">加载中...</p>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>监控模式</label>
+                        <div class="button-group">
+                            <button id="btnRealtime" class="btn btn-primary active">实时监控</button>
+                            <button id="btnHistory" class="btn btn-secondary">历史查询</button>
+                        </div>
+                    </div>
+
+                    <div id="historyControls" class="control-group" style="display: none;">
+                        <label>时间范围</label>
+                        <div class="time-range-inputs">
+                            <input type="datetime-local" id="startTime" class="form-input">
+                            <span>至</span>
+                            <input type="datetime-local" id="endTime" class="form-input">
+                            <button id="btnLoadHistory" class="btn btn-primary">加载数据</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>显示指标</label>
+                        <select id="metricSelect" class="form-select">
+                            <option value="total">总流量 (RX + TX)</option>
+                            <option value="rx">接收流量 (RX)</option>
+                            <option value="tx">发送流量 (TX)</option>
+                            <option value="both">接收 + 发送（分开）</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <button id="btnStart" class="btn btn-success">开始监控</button>
+                        <button id="btnStop" class="btn btn-danger" disabled>停止监控</button>
+                        <button id="btnExport" class="btn btn-secondary">导出数据</button>
+                    </div>
+                </div>
+
+                <div id="statusBar" class="status-bar">
+                    <span id="statusText">就绪</span>
+                    <span id="connectionStatus" class="status-disconnected">未连接</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 实时数据卡片 -->
+        <div id="realtimeCards" class="realtime-cards-grid fade-in-up">
+            <!-- 动态生成 -->
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="card fade-in-up">
+            <div class="card-header">
+                <h3>流量趋势图</h3>
+                <div class="chart-controls">
+                    <label>时间窗口：</label>
+                    <select id="timeWindow" class="form-select-sm">
+                        <option value="60">最近 1 分钟</option>
+                        <option value="300">最近 5 分钟</option>
+                        <option value="600" selected>最近 10 分钟</option>
+                        <option value="1800">最近 30 分钟</option>
+                        <option value="3600">最近 1 小时</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="trafficChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计数据 -->
+        <div id="statisticsSection" class="card fade-in-up" style="display: none;">
+            <div class="card-header">
+                <h3>统计数据</h3>
+            </div>
+            <div class="card-body">
+                <div id="statisticsContent">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 日志输出 -->
+        <div class="card fade-in-up">
+            <div class="card-header">
+                <h3>系统日志</h3>
+                <button id="btnClearLog" class="btn btn-sm btn-secondary">清空日志</button>
+            </div>
+            <div class="card-body">
+                <div id="logOutput" class="log-output"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="task_runtime_client.js"></script>
+    <script src="nic_traffic.js"></script>
+</body>
+
+</html>

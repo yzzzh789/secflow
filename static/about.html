@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于我们 - 数据包分析器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SecFlow</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">总览</a></li>
+                <li><a href="analyzer.html" class="nav-link">威胁检测</a></li>
+                <li><a href="report.html" class="nav-link">行为分析</a></li>
+                <li><a href="lan_monitor.html" class="nav-link">局域网监控</a></li>
+                <li><a href="nic_traffic.html" class="nav-link">网卡流量</a></li>
+                <li><a href="traffic_monitor.html" class="nav-link">流量监控</a></li>
+                <li><a href="website_security.html" class="nav-link">网站安全</a></li>
+                <li><a href="settings.html" class="nav-link">设置</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <section class="page-header">
+            <h1>关于我们</h1>
+            <p>了解我们的团队和技术</p>
+        </section>
+
+        <section class="about-content">
+            <div class="about-section">
+                <h2>项目简介</h2>
+                <p>这是一个结合 AI 大语言模型的智能网络安全分析平台，基于 Python (Scapy) + Go (Gorilla WebSocket) 开发。系统能够实时捕获网络流量，通过
+                    Ollama/Llama.cpp 模型进行威胁检测，并自动联动系统防火墙封锁恶意 IP。</p>
+                <p>除了威胁检测，系统还提供上网行为分析功能，通过 DNS 流量聚合推测用户访问的网站和行为，生成可视化的上网足迹时间线。所有数据处理均在本地完成，保护用户隐私。</p>
+            </div>
+
+            <div class="tech-stack">
+                <h2>技术栈</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-icon">🐍</div>
+                        <h3>Python + Scapy</h3>
+                        <p>数据包捕获和协议解析</p>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🚀</div>
+                        <h3>Go + Gorilla</h3>
+                        <p>高性能 WebSocket 服务器</p>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🤖</div>
+                        <h3>Ollama / Llama.cpp</h3>
+                        <p>AI 大模型威胁分析</p>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🛡️</div>
+                        <h3>Firewall API</h3>
+                        <p>Windows/Linux 防火墙联动</p>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🌐</div>
+                        <h3>WebSocket</h3>
+                        <p>实时双向数据传输</p>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">💻</div>
+                        <h3>HTML5/CSS3/JS</h3>
+                        <p>现代化响应式界面</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="features-overview">
+                <h2>核心优势</h2>
+                <div class="advantages-grid">
+                    <div class="advantage-item">
+                        <h3>🤖 AI 智能分析</h3>
+                        <p>利用大语言模型进行语义级威胁检测，超越传统规则引擎的识别能力</p>
+                    </div>
+                    <div class="advantage-item">
+                        <h3>🛡️ 自动化防御</h3>
+                        <p>检测到威胁后自动联动防火墙封锁，无需人工干预，秒级响应</p>
+                    </div>
+                    <div class="advantage-item">
+                        <h3>📊 行为洞察</h3>
+                        <p>基于 DNS 流量分析用户上网行为，生成可视化时间线报告</p>
+                    </div>
+                    <div class="advantage-item">
+                        <h3>🔒 隐私优先</h3>
+                        <p>所有数据本地处理，支持本地 AI 模型部署，零云端传输</p>
+                    </div>
+                    <div class="advantage-item">
+                        <h3>⚡ 实时响应</h3>
+                        <p>WebSocket 实时推送，毫秒级延迟，流畅的用户体验</p>
+                    </div>
+                    <div class="advantage-item">
+                        <h3>🌍 跨平台</h3>
+                        <p>支持 Windows 和 Linux 系统，自动适配防火墙命令</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-section">
+                <h2>联系我们</h2>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <h3>📧 邮箱</h3>
+                        <p>3304ILH3440@gmail.com</p>
+                    </div>
+                    <div class="contact-item">
+                        <h3>🐙 GitHub</h3>
+                        <p>github.com/packetanalyzer</p>
+                    </div>
+                    <div class="contact-item">
+                        <h3>📚 文档</h3>
+                        <p>docs.packetanalyzer.com</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="version-info">
+                <h2>版本信息</h2>
+                <div class="version-details">
+                    <p><strong>当前版本:</strong> v3.0.0 (AI Enhanced)</p>
+                    <p><strong>发布日期:</strong> 2025年12月</p>
+                    <p><strong>更新内容:</strong></p>
+                    <ul>
+                        <li>✨ 新增 AI 威胁检测引擎（Ollama/Llama.cpp）</li>
+                        <li>🛡️ 新增自动防火墙联动功能</li>
+                        <li>📊 新增上网行为智能分析模块</li>
+                        <li>⚡ 优化 WebSocket 实时传输架构</li>
+                        <li>🎨 全新 UI 设计，支持深色主题</li>
+                        <li>🔒 增强白名单保护机制</li>
+                        <li>🌍 完善跨平台支持（Windows/Linux）</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 数据包分析器. 保留所有权利.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

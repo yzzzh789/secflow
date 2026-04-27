@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据包分析器 - 在线监控</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- 引入 ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SecFlow</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">总览</a></li>
+                <li><a href="analyzer.html" class="nav-link active">威胁检测</a></li>
+                <li><a href="report.html" class="nav-link">行为分析</a></li>
+                <li><a href="lan_monitor.html" class="nav-link">局域网监控</a></li>
+                <li><a href="nic_traffic.html" class="nav-link">网卡流量</a></li>
+                <li><a href="traffic_monitor.html" class="nav-link">流量监控</a></li>
+                <li><a href="website_security.html" class="nav-link">网站安全</a></li>
+                <li><a href="settings.html" class="nav-link">设置</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 上方控制区 -->
+        <div class="dashboard-header">
+            <!-- 左侧控制卡片 -->
+            <div class="controls-card">
+                <div class="control-row">
+                    <div class="control-group">
+                        <label for="interface-select">选择网卡</label>
+                        <select id="interface-select" disabled>
+                            <option>加载中...</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="packet-count">抓包数量</label>
+                        <input type="number" id="packet-count" value="20" min="1" max="500">
+                    </div>
+                    <div class="control-group">
+                        <label for="port-filter">端口过滤</label>
+                        <select id="port-filter">
+                            <option value="">全部流量</option>
+                            <option value="80">HTTP (80)</option>
+                            <option value="443">HTTPS (443)</option>
+                            <option value="custom">自定义...</option>
+                        </select>
+                    </div>
+                    <!-- 隐藏的自定义端口输入框 -->
+                    <div class="control-group" id="custom-port-group" style="display: none;">
+                        <label for="custom-port">端口号</label>
+                        <input type="number" id="custom-port" placeholder="例如: 8080">
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button id="start-btn" class="btn-primary">▶ 开始监控</button>
+                    <button id="stop-btn" class="btn-danger" disabled>⏹ 停止监控</button>
+                </div>
+            </div>
+
+            <!-- 右侧状态卡片 -->
+            <div class="status-card">
+                <div class="status-item">
+                    <span class="status-label">运行状态</span>
+                    <span id="capture-status" class="status-value">待机</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">捕获计数</span>
+                    <span id="packets-captured" class="status-value">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下方表格区 -->
+        <div class="table-container">
+            <table class="packet-table">
+                <thead>
+                    <tr>
+                        <th width="5%">ID</th>
+                        <th width="10%">时间</th>
+                        <th width="15%">源 IP</th>
+                        <th width="15%">目标 IP</th>
+                        <th width="10%">协议</th>
+                        <th width="15%">AI 评估</th>
+                        <th width="20%">摘要</th>
+                        <th width="10%">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="packet-table-body">
+                    <!-- JS 会把数据插入这里 -->
+                </tbody>
+            </table>
+            <div id="empty-state" class="empty-state">
+                <p>点击上方的“开始监控”按钮以启动抓包任务...</p>
+            </div>
+        </div>
+
+        <!-- 新增：总结图表区 -->
+        <div id="summary-section" class="summary-section" style="display: none; margin-top: 30px;">
+            <div class="section-header">
+                <h3>📊 流量拓扑总结</h3>
+                <p class="section-desc">展示 IP 之间的连接关系，连接线越粗表示访问频率越高</p>
+            </div>
+            <div id="summary-graph"
+                style="width: 100%; height: 600px; background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情模态框 (CSS默认隐藏) -->
+    <div id="detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>数据包详情 #<span id="modal-id"></span></h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <!-- 左侧 AI 分析 -->
+                <div class="modal-section ai-section">
+                    <h4>🤖 AI 深度分析</h4>
+                    <div id="modal-analysis"></div>
+                </div>
+                <!-- 右侧 原始数据 -->
+                <div class="modal-section raw-section">
+                    <h4>📦 原始报文数据</h4>
+                    <pre id="modal-raw-data"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="task_runtime_client.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

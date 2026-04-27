@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>功能介绍 - 数据包分析器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SecFlow</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">总览</a></li>
+                <li><a href="analyzer.html" class="nav-link">威胁检测</a></li>
+                <li><a href="report.html" class="nav-link">行为分析</a></li>
+                <li><a href="lan_monitor.html" class="nav-link">局域网监控</a></li>
+                <li><a href="nic_traffic.html" class="nav-link">网卡流量</a></li>
+                <li><a href="traffic_monitor.html" class="nav-link">流量监控</a></li>
+                <li><a href="website_security.html" class="nav-link">网站安全</a></li>
+                <li><a href="settings.html" class="nav-link">设置</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <section class="page-header">
+            <h1>功能介绍</h1>
+            <p>AI 驱动的智能网络安全分析平台</p>
+        </section>
+
+        <section class="feature-detail">
+            <div class="feature-section">
+                <div class="feature-content">
+                    <h2>🤖 AI 威胁检测引擎</h2>
+                    <p>集成 Ollama 和 Llama.cpp 大语言模型，对每个数据包进行深度语义分析。AI 能够识别传统规则难以发现的复杂攻击模式，包括 DDoS、端口扫描、SQL 注入、异常流量等。</p>
+                    <ul>
+                        <li>支持 DeepSeek-R1、Llama 等多种模型</li>
+                        <li>实时威胁评分和分类</li>
+                        <li>自动生成威胁分析报告</li>
+                        <li>可配置本地或远程 AI 服务</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <h4>AI 分析示例</h4>
+                        <div class="code-block">
+                            <code>
+{<br>
+  "is_threat": true,<br>
+  "threat_type": "Port Scan",<br>
+  "reason": "SYN 包高频发送",<br>
+  "firewall_action": "Blocked"<br>
+}
+                            </code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-section reverse">
+                <div class="feature-content">
+                    <h2>🛡️ 自动防火墙联动</h2>
+                    <p>检测到威胁后，系统自动调用操作系统防火墙 API 封锁恶意 IP。支持 Windows Defender Firewall 和 Linux iptables，内置白名单机制防止误封锁。</p>
+                    <ul>
+                        <li>Windows: netsh advfirewall 自动规则</li>
+                        <li>Linux: iptables DROP 规则</li>
+                        <li>网关/DNS/内网 IP 白名单保护</li>
+                        <li>实时显示防火墙动作状态</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <h4>防火墙日志</h4>
+                        <div class="code-block">
+                            <code>
+[2025-12-10 14:23:45]<br>
+IP: 203.0.113.42<br>
+Action: Blocked<br>
+Reason: DDoS Attack<br>
+Rule: Block_AI_Detected_203.0.113.42
+                            </code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-section">
+                <div class="feature-content">
+                    <h2>📊 上网行为智能分析</h2>
+                    <p>通过监控 DNS 查询流量，AI 聚合分析用户访问的网站域名，推测用户行为（观看视频、编程、购物、搜索等），生成可视化的上网足迹时间线。</p>
+                    <ul>
+                        <li>DNS 流量聚合（15秒窗口）</li>
+                        <li>AI 识别应用名称和行为</li>
+                        <li>风险等级评估（安全/可疑/危险）</li>
+                        <li>实时时间线展示</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <h4>行为分析示例</h4>
+                        <div class="code-block">
+                            <code>
+14:30 📺 Bilibili<br>
+      观看视频 [安全]<br>
+14:32 💻 GitHub<br>
+      编写代码 [安全]<br>
+14:35 🛍️ 淘宝<br>
+      浏览商品 [安全]
+                            </code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-section reverse">
+                <div class="feature-content">
+                    <h2>⚡ 实时 WebSocket 架构</h2>
+                    <p>Go 后端提供高性能 WebSocket 服务，Python 脚本通过标准输出流式传输 JSON 数据，前端实时接收并渲染。支持双向通信，可随时启动/停止捕获任务。</p>
+                    <ul>
+                        <li>毫秒级数据推送延迟</li>
+                        <li>支持多客户端并发连接</li>
+                        <li>优雅的进程管理和清理</li>
+                        <li>跨平台进程控制（Windows/Linux）</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <h4>架构示意</h4>
+                        <div class="code-block">
+                            <code>
+Browser (WebSocket)<br>
+    ↕<br>
+Go Server (Gorilla WS)<br>
+    ↕<br>
+Python Script (Scapy)<br>
+    ↕<br>
+Network Interface
+                            </code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-section">
+                <div class="feature-content">
+                    <h2>🎯 灵活的流量过滤</h2>
+                    <p>支持基于端口的 BPF 过滤器，可精准捕获 HTTP(80)、HTTPS(443) 或自定义端口流量。减少无关数据包干扰，提升 AI 分析效率。</p>
+                    <ul>
+                        <li>预设 HTTP/HTTPS 快捷过滤</li>
+                        <li>自定义端口号输入</li>
+                        <li>支持 TCP/UDP 协议筛选</li>
+                        <li>可配置抓包数量限制</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <h4>过滤配置</h4>
+                        <div class="code-block">
+                            <code>
+Port Filter: 443 (HTTPS)<br>
+Packet Count: 50<br>
+Interface: Wi-Fi<br>
+BPF: "port 443"
+                            </code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-section reverse">
+                <div class="feature-content">
+                    <h2>🔒 安全与隐私保护</h2>
+                    <p>所有数据包分析在本地完成，不上传到云端。AI 模型可部署在本地（Ollama）或私有服务器（Llama.cpp），确保敏感数据不泄露。</p>
+                    <ul>
+                        <li>本地数据处理，无云端传输</li>
+                        <li>支持本地 AI 模型部署</li>
+                        <li>管理员权限检测提示</li>
+                        <li>白名单机制防止误操作</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <h4>隐私保护</h4>
+                        <div class="code-block">
+                            <code>
+✓ 本地 Scapy 抓包<br>
+✓ 本地 Ollama 分析<br>
+✓ 本地防火墙控制<br>
+✗ 无云端数据上传
+                            </code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta-section">
+            <h2>准备开始使用？</h2>
+            <p>立即体验 AI 驱动的智能网络安全分析</p>
+            <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+                <a href="analyzer.html" class="btn btn-primary">威胁检测</a>
+                <a href="report.html" class="btn btn-secondary">行为分析</a>
+            </div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 数据包分析器. 保留所有权利.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

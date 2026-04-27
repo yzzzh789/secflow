@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网站安全监测 - SecFlow</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <style>
+        .security-grid,
+        .metrics-grid,
+        .site-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .security-card,
+        .metric-box,
+        .monitor-form,
+        .site-card {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(229, 231, 235, 0.9);
+            border-radius: 16px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+        }
+
+        .monitor-form,
+        .security-card,
+        .site-card,
+        .metric-box {
+            padding: 1.25rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr) auto auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.8rem 0.9rem;
+            border: 1px solid rgba(107, 114, 128, 0.25);
+            border-radius: 10px;
+            color: var(--text-primary);
+            background: #fff;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .metric-box .value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 0.4rem;
+        }
+
+        .metric-box .label,
+        .security-meta,
+        .site-meta,
+        .empty-state {
+            color: var(--text-secondary);
+        }
+
+        .security-card h3,
+        .site-header h3 {
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .security-card p {
+            color: var(--text-secondary);
+            min-height: 44px;
+            margin-bottom: 1rem;
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.3rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            margin-bottom: 0.85rem;
+        }
+
+        .status-safe {
+            background: rgba(16, 185, 129, 0.12);
+            color: #059669;
+        }
+
+        .status-warning {
+            background: rgba(245, 158, 11, 0.14);
+            color: #d97706;
+        }
+
+        .status-danger {
+            background: rgba(239, 68, 68, 0.12);
+            color: #dc2626;
+        }
+
+        .status-pending {
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+        }
+
+        .security-meta,
+        .site-meta {
+            font-size: 0.88rem;
+            line-height: 1.7;
+        }
+
+        .site-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .site-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .site-url {
+            color: var(--primary-color);
+            word-break: break-all;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .site-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .threat-item {
+            border-left: 3px solid #ef4444;
+            padding: 1rem;
+            border-radius: 10px;
+            background: rgba(239, 68, 68, 0.06);
+            margin-bottom: 0.85rem;
+        }
+
+        .threat-item.warning {
+            border-left-color: #d97706;
+            background: rgba(245, 158, 11, 0.08);
+        }
+
+        .threat-item p {
+            margin-top: 0.35rem;
+            color: var(--text-secondary);
+        }
+
+        .log-viewer {
+            max-height: 360px;
+            overflow-y: auto;
+            background: #f8fafc;
+            border: 1px solid rgba(229, 231, 235, 0.9);
+            border-radius: 16px;
+            padding: 1rem;
+            font-family: Consolas, "Courier New", monospace;
+            color: var(--text-primary);
+        }
+
+        .log-entry {
+            padding: 0.55rem 0;
+            border-bottom: 1px solid rgba(229, 231, 235, 0.9);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: var(--primary-color);
+            margin-right: 0.75rem;
+            font-weight: 700;
+        }
+
+        @media (max-width: 900px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body class="dashboard-body">
+    <nav class="navbar dashboard-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SecFlow</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">总览</a></li>
+                <li><a href="analyzer.html" class="nav-link">威胁检测</a></li>
+                <li><a href="report.html" class="nav-link">行为分析</a></li>
+                <li><a href="lan_monitor.html" class="nav-link">局域网监控</a></li>
+                <li><a href="nic_traffic.html" class="nav-link">网卡流量</a></li>
+                <li><a href="traffic_monitor.html" class="nav-link">流量监控</a></li>
+                <li><a href="website_security.html" class="nav-link active">网站安全</a></li>
+                <li><a href="settings.html" class="nav-link">设置</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="product-shell">
+        <section class="hero-section">
+            <div class="hero-badge" id="backendStatus">后端监测已连接</div>
+            <h1 class="hero-title">网站安全前后端联动监测</h1>
+            <p class="hero-subtitle">服务端负责真实 HTTP 可用性探测、页面哈希比对、安全头检查和敏感暴露扫描；前端负责配置、可视化和人工复核，不再使用本地随机模拟。</p>
+        </section>
+
+        <section class="overview-section">
+            <h2 class="section-title">添加监测网站</h2>
+            <div class="monitor-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="websiteUrl">网站地址</label>
+                        <input type="url" id="websiteUrl" placeholder="https://example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="checkInterval">检测间隔</label>
+                        <select id="checkInterval">
+                            <option value="5">5 分钟</option>
+                            <option value="15" selected>15 分钟</option>
+                            <option value="30">30 分钟</option>
+                            <option value="60">60 分钟</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="addWebsiteBtn">添加网站</button>
+                        <button class="btn btn-outline" id="checkNowBtn">立即检测全部</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="overview-section">
+            <h2 class="section-title">监测统计</h2>
+            <div class="metrics-grid">
+                <div class="metric-box"><div class="value" id="totalWebsites">0</div><div class="label">监测网站</div></div>
+                <div class="metric-box"><div class="value" id="healthyWebsites">0</div><div class="label">健康网站</div></div>
+                <div class="metric-box"><div class="value" id="activeIssues">0</div><div class="label">活动问题</div></div>
+                <div class="metric-box"><div class="value" id="highRiskIssues">0</div><div class="label">高风险问题</div></div>
+            </div>
+        </section>
+
+        <section class="features-section">
+            <h2 class="section-title">检测模块</h2>
+            <div class="security-grid">
+                <div class="security-card">
+                    <h3>页面篡改检测</h3>
+                    <span class="status-chip status-pending" id="tamperStatus">待检测</span>
+                    <p id="tamperMessage">等待服务端首次建立页面内容基线。</p>
+                    <div class="security-meta">异常站点: <span id="tamperIssueCount">0</span><br>最近检测: <span id="tamperLastCheck">--</span></div>
+                </div>
+                <div class="security-card">
+                    <h3>恶意脚本检测</h3>
+                    <span class="status-chip status-pending" id="malwareStatus">待检测</span>
+                    <p id="malwareMessage">检查页面中的可疑混淆脚本、隐藏 iframe 和命令执行特征。</p>
+                    <div class="security-meta">命中项: <span id="malwareIssueCount">0</span><br>最近检测: <span id="malwareLastCheck">--</span></div>
+                </div>
+                <div class="security-card">
+                    <h3>敏感内容检测</h3>
+                    <span class="status-chip status-pending" id="contentStatus">待检测</span>
+                    <p id="contentMessage">检查页面文本中是否存在敏感内容关键字。</p>
+                    <div class="security-meta">命中项: <span id="contentIssueCount">0</span><br>最近检测: <span id="contentLastCheck">--</span></div>
+                </div>
+                <div class="security-card">
+                    <h3>可用性检测</h3>
+                    <span class="status-chip status-pending" id="availabilityStatus">待检测</span>
+                    <p id="availabilityMessage">检测站点连通性、响应时间、HTTP 状态码和 SSL 到期天数。</p>
+                    <div class="security-meta">平均响应: <span id="avgResponseTime">--</span><br>平均可用率: <span id="avgUptime">--</span></div>
+                </div>
+                <div class="security-card">
+                    <h3>安全基线检查</h3>
+                    <span class="status-chip status-pending" id="baselineStatus">待检测</span>
+                    <p id="baselineMessage">检查关键安全响应头是否缺失，以及服务端信息是否过度暴露。</p>
+                    <div class="security-meta">缺口数量: <span id="baselineIssueCount">0</span><br>最近检测: <span id="baselineLastCheck">--</span></div>
+                </div>
+                <div class="security-card">
+                    <h3>暴露面扫描</h3>
+                    <span class="status-chip status-pending" id="exposureStatus">待检测</span>
+                    <p id="exposureMessage">检查常见敏感路径是否暴露，例如 `.env`、`.git`、`phpinfo`、`actuator`。</p>
+                    <div class="security-meta">发现数量: <span id="exposureIssueCount">0</span><br>最近检测: <span id="exposureLastCheck">--</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="observability-section">
+            <h2 class="section-title">监测网站</h2>
+            <div class="site-list" id="siteList">
+                <div class="site-card"><div class="empty-state">暂无监测网站，先添加一个网址开始。</div></div>
+            </div>
+        </section>
+
+        <section class="observability-section">
+            <h2 class="section-title">安全事件</h2>
+            <div class="workspace-grid">
+                <section class="panel panel-span-2">
+                    <div class="panel-header">
+                        <h3>最近威胁</h3>
+                        <button class="btn btn-outline" id="clearThreatsBtn">清空事件</button>
+                    </div>
+                    <div id="threatList">
+                        <p class="empty-state">暂无威胁事件。</p>
+                    </div>
+                </section>
+                <section class="panel">
+                    <div class="panel-header">
+                        <h3>系统日志</h3>
+                    </div>
+                    <div class="log-viewer" id="logViewer">
+                        <div class="log-entry"><span class="log-time">--</span><span>等待后端返回日志。</span></div>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer dashboard-footer">
+        <div class="footer-content">
+            <p>SecFlow 网站安全监测</p>
+        </div>
+    </footer>
+
+    <script src="website_security.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,447 @@
+package main
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"sync"
+	"time"
+
+	"github.com/gorilla/websocket"
+)
+
+// WebSocket 升级器
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true // 允许所有来源（生产环境需要限制）
+	},
+}
+
+// 客户端连接管理
+type Client struct {
+	conn *websocket.Conn
+	send chan []byte
+}
+
+type Hub struct {
+	clients    map[*Client]bool
+	broadcast  chan []byte
+	register   chan *Client
+	unregister chan *Client
+	mu         sync.RWMutex
+}
+
+func newHub() *Hub {
+	return &Hub{
+		clients:    make(map[*Client]bool),
+		broadcast:  make(chan []byte, 256),
+		register:   make(chan *Client),
+		unregister: make(chan *Client),
+	}
+}
+
+func (h *Hub) run() {
+	for {
+		select {
+		case client := <-h.register:
+			h.mu.Lock()
+			h.clients[client] = true
+			h.mu.Unlock()
+			log.Printf("客户端已连接，当前连接数: %d", len(h.clients))
+
+		case client := <-h.unregister:
+			h.mu.Lock()
+			if _, ok := h.clients[client]; ok {
+				delete(h.clients, client)
+				close(client.send)
+			}
+			h.mu.Unlock()
+			log.Printf("客户端已断开，当前连接数: %d", len(h.clients))
+
+		case message := <-h.broadcast:
+			h.mu.RLock()
+			for client := range h.clients {
+				select {
+				case client.send <- message:
+				default:
+					close(client.send)
+					delete(h.clients, client)
+				}
+			}
+			h.mu.RUnlock()
+		}
+	}
+}
+
+// 流量监控服务
+type TrafficMonitorService struct {
+	cmd    *exec.Cmd
+	hub    *Hub
+	active bool
+	mu     sync.Mutex
+}
+
+func NewTrafficMonitorService(hub *Hub) *TrafficMonitorService {
+	return &TrafficMonitorService{
+		hub:    hub,
+		active: false,
+	}
+}
+
+func (s *TrafficMonitorService) Start(nic string, warningMbps, criticalMbps float64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.active {
+		return fmt.Errorf("服务已在运行")
+	}
+
+	// 启动简化版流量监控脚本（不依赖 nic_monitor 模块）
+	s.cmd = exec.Command("python", "-u", "simple_traffic_monitor.py",
+		"--nic", nic,
+		"--interval", "1",
+		"--warning-mbps", fmt.Sprintf("%.0f", warningMbps),
+		"--critical-mbps", fmt.Sprintf("%.0f", criticalMbps),
+	)
+
+	// 设置环境变量确保UTF-8输出
+	s.cmd.Env = append(os.Environ(), "PYTHONIOENCODING=utf-8")
+
+	stdout, err := s.cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("无法获取输出管道: %v", err)
+	}
+
+	if err := s.cmd.Start(); err != nil {
+		return fmt.Errorf("启动失败: %v", err)
+	}
+
+	s.active = true
+
+	// 读取输出并广播
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Bytes()
+
+			// 解析 JSON 并转发
+			var data map[string]interface{}
+			if err := json.Unmarshal(line, &data); err != nil {
+				log.Printf("JSON 解析错误: %v", err)
+				continue
+			}
+
+			// 转发到所有 WebSocket 客户端
+			s.hub.broadcast <- line
+		}
+
+		if err := scanner.Err(); err != nil {
+			log.Printf("读取输出错误: %v", err)
+		}
+
+		s.mu.Lock()
+		s.active = false
+		s.mu.Unlock()
+	}()
+
+	log.Printf("流量监控服务已启动: %s (警告: %.0f MB/s, 严重: %.0f MB/s)", nic, warningMbps, criticalMbps)
+	return nil
+}
+
+func (s *TrafficMonitorService) Stop() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.active || s.cmd == nil {
+		return fmt.Errorf("服务未运行")
+	}
+
+	if err := s.cmd.Process.Kill(); err != nil {
+		return fmt.Errorf("停止失败: %v", err)
+	}
+
+	s.active = false
+	log.Println("流量监控服务已停止")
+	return nil
+}
+
+// 数据包分析服务
+type PacketAnalyzerService struct {
+	cmd    *exec.Cmd
+	hub    *Hub
+	active bool
+	mu     sync.Mutex
+}
+
+func NewPacketAnalyzerService(hub *Hub) *PacketAnalyzerService {
+	return &PacketAnalyzerService{
+		hub:    hub,
+		active: false,
+	}
+}
+
+func (s *PacketAnalyzerService) Start(nic string, count int, provider, model string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.active {
+		return fmt.Errorf("服务已在运行")
+	}
+
+	// 启动 improved_packet_analyzer.py
+	args := []string{
+		"improved_packet_analyzer.py",
+		"capture",
+		"-i", nic,
+		"-c", fmt.Sprintf("%d", count),
+		"--provider", provider,
+	}
+
+	if model != "" {
+		args = append(args, "--model", model)
+	}
+
+	s.cmd = exec.Command("python", args...)
+
+	stdout, err := s.cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("无法获取输出管道: %v", err)
+	}
+
+	if err := s.cmd.Start(); err != nil {
+		return fmt.Errorf("启动失败: %v", err)
+	}
+
+	s.active = true
+
+	// 读取输出并广播
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		packets := []interface{}{}
+
+		for scanner.Scan() {
+			line := scanner.Bytes()
+
+			// 解析 JSON
+			var data map[string]interface{}
+			if err := json.Unmarshal(line, &data); err != nil {
+				log.Printf("JSON 解析错误: %v", err)
+				continue
+			}
+
+			// 如果是数据包，收集起来
+			if _, ok := data["id"]; ok {
+				packets = append(packets, data)
+
+				// 每收集 10 个包或每 5 秒发送一次
+				if len(packets) >= 10 {
+					s.sendPackets(packets)
+					packets = []interface{}{}
+				}
+			}
+		}
+
+		// 发送剩余的包
+		if len(packets) > 0 {
+			s.sendPackets(packets)
+		}
+
+		if err := scanner.Err(); err != nil {
+			log.Printf("读取输出错误: %v", err)
+		}
+
+		s.mu.Lock()
+		s.active = false
+		s.mu.Unlock()
+	}()
+
+	log.Printf("数据包分析服务已启动: %s (抓取 %d 个包)", nic, count)
+	return nil
+}
+
+func (s *PacketAnalyzerService) sendPackets(packets []interface{}) {
+	message := map[string]interface{}{
+		"type": "packet_data",
+		"data": packets,
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("JSON 编码错误: %v", err)
+		return
+	}
+
+	s.hub.broadcast <- data
+}
+
+func (s *PacketAnalyzerService) Stop() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.active || s.cmd == nil {
+		return fmt.Errorf("服务未运行")
+	}
+
+	if err := s.cmd.Process.Kill(); err != nil {
+		return fmt.Errorf("停止失败: %v", err)
+	}
+
+	s.active = false
+	log.Println("数据包分析服务已停止")
+	return nil
+}
+
+// HTTP 处理器
+func handleWebSocket(hub *Hub, trafficService *TrafficMonitorService, packetService *PacketAnalyzerService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Printf("WebSocket 升级失败: %v", err)
+			return
+		}
+
+		client := &Client{
+			conn: conn,
+			send: make(chan []byte, 256),
+		}
+
+		hub.register <- client
+
+		// 启动写协程
+		go func() {
+			defer func() {
+				hub.unregister <- client
+				conn.Close()
+			}()
+
+			for message := range client.send {
+				if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
+					log.Printf("写入消息失败: %v", err)
+					return
+				}
+			}
+		}()
+
+		// 读取客户端消息（用于控制命令）
+		for {
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					log.Printf("WebSocket 错误: %v", err)
+				}
+				break
+			}
+
+			// 解析命令
+			var cmd map[string]interface{}
+			if err := json.Unmarshal(message, &cmd); err != nil {
+				log.Printf("命令解析错误: %v", err)
+				continue
+			}
+
+			handleCommand(cmd, trafficService, packetService, client)
+		}
+	}
+}
+
+func handleCommand(cmd map[string]interface{}, trafficService *TrafficMonitorService, packetService *PacketAnalyzerService, client *Client) {
+	action, ok := cmd["action"].(string)
+	if !ok {
+		return
+	}
+
+	switch action {
+	case "start_traffic_monitor":
+		nic := cmd["nic"].(string)
+		warningMbps := cmd["warning_mbps"].(float64)
+		criticalMbps := cmd["critical_mbps"].(float64)
+
+		if err := trafficService.Start(nic, warningMbps, criticalMbps); err != nil {
+			sendError(client, err.Error())
+		}
+
+	case "stop_traffic_monitor":
+		if err := trafficService.Stop(); err != nil {
+			sendError(client, err.Error())
+		}
+
+	case "start_packet_analyzer":
+		nic := cmd["nic"].(string)
+		count := int(cmd["count"].(float64))
+		provider := cmd["provider"].(string)
+		model := ""
+		if m, ok := cmd["model"].(string); ok {
+			model = m
+		}
+
+		if err := packetService.Start(nic, count, provider, model); err != nil {
+			sendError(client, err.Error())
+		}
+
+	case "stop_packet_analyzer":
+		if err := packetService.Stop(); err != nil {
+			sendError(client, err.Error())
+		}
+	}
+}
+
+func sendError(client *Client, message string) {
+	data := map[string]interface{}{
+		"type":    "error",
+		"message": message,
+	}
+
+	jsonData, _ := json.Marshal(data)
+	client.send <- jsonData
+}
+
+func main() {
+	// 获取当前工作目录
+	workDir, err := os.Getwd()
+	if err != nil {
+		log.Fatal("无法获取工作目录:", err)
+	}
+	log.Printf("当前工作目录: %s", workDir)
+
+	// 创建 Hub
+	hub := newHub()
+	go hub.run()
+
+	// 创建服务
+	trafficService := NewTrafficMonitorService(hub)
+	packetService := NewPacketAnalyzerService(hub)
+
+	// 自动启动流量监控（可选）
+	// 根据实际情况修改网卡名称和阈值
+	go func() {
+		time.Sleep(2 * time.Second)
+		if err := trafficService.Start("singbox_tun", 10, 50); err != nil {
+			log.Printf("自动启动流量监控失败: %v", err)
+			log.Printf("请检查: 1) 网卡名称是否正确 2) Python 依赖是否安装 3) 是否在项目根目录运行")
+		}
+	}()
+
+	// HTTP 路由
+	http.HandleFunc("/ws", handleWebSocket(hub, trafficService, packetService))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// 尝试从当前目录和上级目录查找 HTML 文件
+		htmlPath := "traffic_monitor_frontend_optimized.html"
+		if _, err := os.Stat(htmlPath); os.IsNotExist(err) {
+			htmlPath = "traffic_monitor/traffic_monitor_frontend_optimized.html"
+		}
+		http.ServeFile(w, r, htmlPath)
+	})
+
+	// 启动服务器
+	addr := ":8080"
+	log.Printf("服务器启动在 http://localhost%s", addr)
+	log.Printf("打开浏览器访问: http://localhost:8080")
+
+	if err := http.ListenAndServe(addr, nil); err != nil {
+		log.Fatal("服务器启动失败:", err)
+	}
+}

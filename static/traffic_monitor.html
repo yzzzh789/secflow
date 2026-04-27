@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流量监控系统</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="chart.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: #f5f6f8;
+            color: #1f2937;
+        }
+
+        .monitor-shell {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px 20px 0;
+        }
+
+        .monitor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 22px 24px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        .monitor-heading {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .monitor-header h1 {
+            font-size: 28px;
+            color: #0f172a;
+        }
+
+        .monitor-page-subtitle {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #4b5563;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 999px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-dot.connected { background: #22c55e; }
+        .status-dot.disconnected { background: #ef4444; }
+
+        .compat-notice {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 18px;
+            padding: 14px 18px;
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            border-radius: 14px;
+            color: #9a3412;
+        }
+
+        .compat-notice strong {
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .compat-link {
+            flex-shrink: 0;
+            color: #9a3412;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+        }
+
+        .card + .card {
+            margin-top: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1565c0;
+        }
+
+        .nic-list,
+        .alert-list,
+        .threshold-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nic-item,
+        .threshold-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fafafa;
+            padding: 12px;
+        }
+
+        .nic-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .nic-item.monitoring {
+            background: #edf7ed;
+            border-color: #86efac;
+        }
+
+        .nic-name {
+            flex: 1;
+            word-break: break-all;
+            font-size: 13px;
+        }
+
+        .nic-status {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #22c55e;
+            color: #ffffff;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .secondary-button {
+            width: 100%;
+            border: 1px solid #0f766e;
+            border-radius: 8px;
+            background: #0f766e;
+            color: #ffffff;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .btn {
+            flex: 1;
+            border: 1px solid #1565c0;
+            border-radius: 8px;
+            background: #1565c0;
+            color: #ffffff;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn.danger {
+            border-color: #dc2626;
+            background: #dc2626;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            padding: 16px;
+            background: linear-gradient(135deg, #eff6ff, #ffffff);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1565c0;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 360px;
+        }
+
+        .alert {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 13px;
+        }
+
+        .alert.warning {
+            background: rgba(245, 158, 11, 0.12);
+            border-left: 4px solid #f59e0b;
+        }
+
+        .alert.critical {
+            background: rgba(239, 68, 68, 0.12);
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert.recovery {
+            background: rgba(34, 197, 94, 0.12);
+            border-left: 4px solid #22c55e;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-close {
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .threshold-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .threshold-name {
+            font-weight: 700;
+            word-break: break-all;
+        }
+
+        .threshold-mode {
+            font-size: 12px;
+            color: #1565c0;
+        }
+
+        .threshold-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            font-size: 12px;
+            color: #4b5563;
+        }
+
+        .empty-state,
+        .loading {
+            text-align: center;
+            padding: 24px 12px;
+            color: #9ca3af;
+        }
+
+        @media (max-width: 960px) {
+            .monitor-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .compat-notice {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SecFlow</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">总览</a></li>
+                <li><a href="analyzer.html" class="nav-link">威胁检测</a></li>
+                <li><a href="report.html" class="nav-link">行为分析</a></li>
+                <li><a href="lan_monitor.html" class="nav-link">局域网监控</a></li>
+                <li><a href="nic_traffic.html" class="nav-link">网卡流量</a></li>
+                <li><a href="traffic_monitor.html" class="nav-link active">流量监控</a></li>
+                <li><a href="website_security.html" class="nav-link">网站安全</a></li>
+                <li><a href="settings.html" class="nav-link">设置</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="monitor-shell">
+        <div class="monitor-header">
+            <div class="monitor-heading">
+                <h1>流量监控系统</h1>
+                <p class="monitor-page-subtitle">集中查看网卡状态、流量趋势与阈值告警，并保持与站内安全模块一致的导航体验。</p>
+            </div>
+            <div class="status-badge">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">连接中...</span>
+            </div>
+        </div>
+
+        <div class="compat-notice">
+            <div>
+                <strong>兼容入口</strong>
+                <span>当前页面继续保留给历史链接和兼容访问使用，主线网卡流量页面已经收敛到 nic_traffic.html。</span>
+            </div>
+            <a class="compat-link" href="nic_traffic.html">打开主线入口</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">网卡选择</div>
+                </div>
+
+                <div class="control-buttons">
+                    <button class="btn" id="startBtn" onclick="startMonitoring()">
+                        开始监控
+                    </button>
+                    <button class="btn danger" id="stopBtn" onclick="stopAll()">
+                        全部停止
+                    </button>
+                </div>
+
+                <div id="nicList" class="nic-list">
+                    <div class="loading">正在加载网卡列表...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">实时告警</div>
+                </div>
+                <div class="alert-list" id="alertContainer">
+                    <div class="empty-state">暂无告警</div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">监控网卡数</div>
+                    <div class="stat-value"><span id="monitoringCount">0</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">总流量</div>
+                    <div class="stat-value"><span id="totalTraffic">0.00</span> MB/s</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">峰值流量</div>
+                    <div class="stat-value"><span id="peakTraffic">0.00</span> MB/s</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">平均流量</div>
+                    <div class="stat-value"><span id="avgTraffic">0.00</span> MB/s</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">流量趋势</div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="trafficChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">动态阈值</div>
+                </div>
+                <div class="threshold-list" id="thresholdList">
+                    <div class="empty-state">暂无监控数据</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="task_runtime_client.js"></script>
+    <script src="traffic_monitor.js"></script>
+</body>
+</html>

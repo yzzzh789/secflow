@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecFlow 总览</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body class="dashboard-body">
+    <nav class="navbar dashboard-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SecFlow</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link active">总览</a></li>
+                <li><a href="analyzer.html" class="nav-link">威胁检测</a></li>
+                <li><a href="report.html" class="nav-link">行为分析</a></li>
+                <li><a href="lan_monitor.html" class="nav-link">局域网监控</a></li>
+                <li><a href="nic_traffic.html" class="nav-link">网卡流量</a></li>
+                <li><a href="traffic_monitor.html" class="nav-link">流量监控</a></li>
+                <li><a href="website_security.html" class="nav-link">网站安全</a></li>
+                <li><a href="settings.html" class="nav-link">设置</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="product-shell">
+        <section class="hero-section">
+            <div class="hero-badge">SecFlow 智能安全中枢</div>
+            <h1 class="hero-title">统一查看网络安全态势与各模块运行状态</h1>
+            <p class="hero-subtitle">
+                首页集中展示抓包检测、行为分析、局域网监控和网卡流量四类能力，保留原有内容与交互，只将界面统一为中文并对齐现有页面风格。
+            </p>
+            <div class="hero-actions">
+                <a class="btn btn-primary btn-large" href="analyzer.html">立即开始</a>
+                <a class="btn btn-outline btn-large" href="nic_traffic.html">网卡流量</a>
+                <a class="btn btn-outline btn-large" href="https://github.com" target="_blank" rel="noreferrer">查看仓库</a>
+            </div>
+        </section>
+
+        <section class="overview-section">
+            <h2 class="section-title">运行概览</h2>
+            <div class="hero-status-card glow-card">
+                <div class="status-top">
+                    <div class="status-indicator"></div>
+                    <div>
+                        <div class="status-kicker">系统状态</div>
+                        <div class="status-headline" id="coverageText">加载中</div>
+                        <div class="status-meta" id="generatedAtText">正在读取数据库</div>
+                    </div>
+                </div>
+
+                <div class="status-grid">
+                    <div>
+                        <span>在线模块</span>
+                        <strong id="healthyModulesValue">0</strong>
+                    </div>
+                    <div>
+                        <span>活跃网卡</span>
+                        <strong id="activeNicsValue">0</strong>
+                    </div>
+                    <div>
+                        <span>高风险资产</span>
+                        <strong id="highRiskAssetsValue">0</strong>
+                    </div>
+                    <div>
+                        <span>威胁事件</span>
+                        <strong id="threatEventsValue">0</strong>
+                    </div>
+                    <div>
+                        <span>累计报文</span>
+                        <strong id="totalPacketsValue">0</strong>
+                    </div>
+                    <div>
+                        <span>威胁占比</span>
+                        <strong id="threatRateValue">0%</strong>
+                    </div>
+                    <div style="display:none;">
+                        <span id="behaviorSessionsValue">0</span>
+                        <span id="lanAssetsValue">0</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features-section">
+            <h2 class="section-title">模块控制台</h2>
+            <div class="task-center-grid">
+                <article class="task-card" id="taskCardThreat">
+                    <div class="task-card-icon">威</div>
+                    <div class="task-card-content">
+                        <h4>威胁检测</h4>
+                        <p>在本地进行报文抓取与 AI 威胁判断，适合快速确认可疑流量。</p>
+                        <span class="task-runtime" id="taskRuntimeThreat">待机</span>
+                    </div>
+                    <div class="task-form">
+                        <select id="taskThreatInterface" aria-label="威胁检测网卡"></select>
+                        <input id="taskThreatCount" type="number" min="1" max="500" placeholder="抓包数量">
+                        <input id="taskThreatPort" type="text" placeholder="端口过滤">
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-primary" id="taskThreatStart">启动</button>
+                        <button class="btn btn-danger" id="taskThreatStop">停止</button>
+                    </div>
+                </article>
+
+                <article class="task-card" id="taskCardBehavior">
+                    <div class="task-card-icon">行</div>
+                    <div class="task-card-content">
+                        <h4>行为分析</h4>
+                        <p>根据访问行为做聚类和风险判断，用于还原用户活动与异常模式。</p>
+                        <span class="task-runtime" id="taskRuntimeBehavior">待机</span>
+                    </div>
+                    <div class="task-form">
+                        <select id="taskBehaviorInterface" aria-label="行为分析网卡"></select>
+                        <input id="taskBehaviorLimit" type="number" min="1" max="180" placeholder="时间窗口（分钟）">
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-primary" id="taskBehaviorStart">启动</button>
+                        <button class="btn btn-danger" id="taskBehaviorStop">停止</button>
+                    </div>
+                </article>
+
+                <article class="task-card" id="taskCardLan">
+                    <div class="task-card-icon">局</div>
+                    <div class="task-card-content">
+                        <h4>局域网监控</h4>
+                        <p>生成资产画像、域名访问关联和风险告警，辅助定位内网传播面。</p>
+                        <span class="task-runtime" id="taskRuntimeLan">待机</span>
+                    </div>
+                    <div class="task-form">
+                        <select id="taskLanInterface" aria-label="局域网监控网卡"></select>
+                        <select id="taskLanThreatIntel" aria-label="威胁情报配置">
+                            <option value="enabled">启用情报</option>
+                            <option value="disabled">关闭情报</option>
+                        </select>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-primary" id="taskLanStart">启动</button>
+                        <button class="btn btn-danger" id="taskLanStop">停止</button>
+                    </div>
+                </article>
+
+                <article class="task-card" id="taskCardNic">
+                    <div class="task-card-icon">网</div>
+                    <div class="task-card-content">
+                        <h4>网卡流量</h4>
+                        <p>持续采集吞吐序列，适合观察实时带宽波动和异常峰值。</p>
+                        <span class="task-runtime" id="taskRuntimeNic">待机</span>
+                    </div>
+                    <div class="task-form">
+                        <div class="task-checkbox-list" id="taskNicList"></div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-primary" id="taskNicStart">启动</button>
+                        <button class="btn btn-danger" id="taskNicStop">停止</button>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="how-it-works-section">
+            <h2 class="section-title">使用路径</h2>
+            <div class="workflow-vertical">
+                <article class="workflow-step-vertical">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <h4>先看总体状态</h4>
+                        <p>通过首页概览确认哪些模块正在运行，以及当前风险是否集中在资产、流量或威胁事件上。</p>
+                    </div>
+                </article>
+                <article class="workflow-step-vertical">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <h4>进入威胁检测</h4>
+                        <p>查看 AI 对报文的判定结果、源目 IP 和原始细节，快速验证可疑流量是否需要进一步处置。</p>
+                    </div>
+                </article>
+                <article class="workflow-step-vertical">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <h4>联动行为与局域网分析</h4>
+                        <p>结合行为分析和局域网监控，判断访问意图、风险资产以及异常是否已经扩散到内网其它节点。</p>
+                    </div>
+                </article>
+                <article class="workflow-step-vertical">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <h4>补充查看带宽变化</h4>
+                        <p>如果出现吞吐突增或长时间异常占用，可继续进入网卡流量页面查看实时曲线和历史走势。</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="observability-section">
+            <h2 class="section-title">数据看板</h2>
+            <div class="workspace-grid">
+                <section class="panel panel-span-2">
+                    <div class="panel-header">
+                        <h3>模块运行状态</h3>
+                    </div>
+                    <div class="module-grid" id="modulesGrid"></div>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-header">
+                        <h3>威胁分布</h3>
+                    </div>
+                    <div class="distribution-list" id="threatTypeList"></div>
+                </section>
+
+                <section class="panel panel-span-2">
+                    <div class="panel-header">
+                        <h3>近 7 天趋势</h3>
+                    </div>
+                    <div class="trend-chart" id="trendChart"></div>
+                    <div class="trend-legend">
+                        <span class="legend-item"><i class="legend-swatch packets"></i>报文</span>
+                        <span class="legend-item"><i class="legend-swatch threats"></i>威胁</span>
+                        <span class="legend-item"><i class="legend-swatch behaviors"></i>行为</span>
+                        <span class="legend-item"><i class="legend-swatch lan"></i>资产</span>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-header">
+                        <h3>事件动态</h3>
+                    </div>
+                    <div class="event-feed" id="eventFeed"></div>
+                </section>
+
+                <section class="panel panel-span-2">
+                    <div class="panel-header">
+                        <h3>风险资产</h3>
+                    </div>
+                    <div class="asset-table" id="assetTable"></div>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-header">
+                        <h3>网卡排行</h3>
+                    </div>
+                    <div class="nic-ranking" id="nicRanking"></div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer dashboard-footer">
+        <div class="footer-content">
+            <p>SecFlow 本地安全控制台</p>
+        </div>
+    </footer>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

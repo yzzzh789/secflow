@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>&#27969;&#37327;&#30417;&#25511;&#31995;&#32479;</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: #f5f6f8;
+            color: #1f2937;
+        }
+
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        }
+
+        .navbar h1 {
+            font-size: 20px;
+            color: #1565c0;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-dot.connected { background: #22c55e; }
+        .status-dot.disconnected { background: #ef4444; }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+        }
+
+        .card + .card {
+            margin-top: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1565c0;
+        }
+
+        .nic-list,
+        .alert-list,
+        .threshold-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nic-item,
+        .threshold-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fafafa;
+            padding: 12px;
+        }
+
+        .nic-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .nic-item.monitoring {
+            background: #edf7ed;
+            border-color: #86efac;
+        }
+
+        .nic-name {
+            flex: 1;
+            word-break: break-all;
+            font-size: 13px;
+        }
+
+        .nic-status {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #22c55e;
+            color: #ffffff;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .secondary-button {
+            width: 100%;
+            border: 1px solid #0f766e;
+            border-radius: 8px;
+            background: #0f766e;
+            color: #ffffff;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .btn {
+            flex: 1;
+            border: 1px solid #1565c0;
+            border-radius: 8px;
+            background: #1565c0;
+            color: #ffffff;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn.danger {
+            border-color: #dc2626;
+            background: #dc2626;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            padding: 16px;
+            background: linear-gradient(135deg, #eff6ff, #ffffff);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1565c0;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 360px;
+        }
+
+        .alert {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 13px;
+        }
+
+        .alert.warning {
+            background: rgba(245, 158, 11, 0.12);
+            border-left: 4px solid #f59e0b;
+        }
+
+        .alert.critical {
+            background: rgba(239, 68, 68, 0.12);
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert.recovery {
+            background: rgba(34, 197, 94, 0.12);
+            border-left: 4px solid #22c55e;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-close {
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .threshold-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .threshold-name {
+            font-weight: 700;
+            word-break: break-all;
+        }
+
+        .threshold-mode {
+            font-size: 12px;
+            color: #1565c0;
+        }
+
+        .threshold-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            font-size: 12px;
+            color: #4b5563;
+        }
+
+        .empty-state,
+        .loading {
+            text-align: center;
+            padding: 24px 12px;
+            color: #9ca3af;
+        }
+
+        @media (max-width: 960px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>&#27969;&#37327;&#30417;&#25511;&#31995;&#32479;</h1>
+        <div class="status-badge">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">&#36830;&#25509;&#20013;...</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">&#32593;&#21345;&#36873;&#25321;</div>
+                </div>
+
+                <div class="control-buttons">
+                    <button class="btn" id="startBtn" onclick="startMonitoring()">
+                        &#24320;&#22987;&#30417;&#25511;
+                    </button>
+                    <button class="btn danger" id="stopBtn" onclick="stopAll()">
+                        &#20840;&#37096;&#20572;&#27490;
+                    </button>
+                </div>
+
+                <div id="nicList" class="nic-list">
+                    <div class="loading">&#27491;&#22312;&#21152;&#36733;&#32593;&#21345;&#21015;&#34920;...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">&#23454;&#26102;&#21578;&#35686;</div>
+                </div>
+                <div class="alert-list" id="alertContainer">
+                    <div class="empty-state">&#26242;&#26080;&#21578;&#35686;</div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">&#30417;&#25511;&#32593;&#21345;&#25968;</div>
+                    <div class="stat-value"><span id="monitoringCount">0</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">&#24635;&#27969;&#37327;</div>
+                    <div class="stat-value"><span id="totalTraffic">0.00</span> MB/s</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">&#23792;&#20540;&#27969;&#37327;</div>
+                    <div class="stat-value"><span id="peakTraffic">0.00</span> MB/s</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">&#24179;&#22343;&#27969;&#37327;</div>
+                    <div class="stat-value"><span id="avgTraffic">0.00</span> MB/s</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">&#27969;&#37327;&#36235;&#21183;</div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="trafficChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">&#21160;&#24577;&#38408;&#20540;</div>
+                </div>
+                <div class="threshold-list" id="thresholdList">
+                    <div class="empty-state">&#26242;&#26080;&#30417;&#25511;&#25968;&#25454;</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let reconnectTimer = null;
+        let availableNICs = [];
+        let monitoringNICs = new Set();
+        let trafficData = {};
+        let trafficWarningThresholds = {};
+        let latestNICMetrics = {};
+        const maxDataPoints = 60;
+
+        const TEXT = {
+            selectNic: "\u8bf7\u81f3\u5c11\u9009\u62e9\u4e00\u5f20\u7f51\u5361\u3002",
+            loadNicFail: "\u52a0\u8f7d\u7f51\u5361\u5217\u8868\u5931\u8d25",
+            noNic: "\u672a\u627e\u5230\u7f51\u5361",
+            monitoring: "\u76d1\u63a7\u4e2d",
+            noAlert: "\u6682\u65e0\u544a\u8b66",
+            noData: "\u6682\u65e0\u76d1\u63a7\u6570\u636e",
+            currentTraffic: "\u5f53\u524d\u6d41\u91cf",
+            warningThreshold: "\u544a\u8b66\u9608\u503c",
+            criticalThreshold: "\u4e25\u91cd\u9608\u503c",
+            median: "\u4e2d\u4f4d\u6570",
+            sampleCount: "\u6837\u672c\u6570",
+            state: "\u72b6\u6001",
+            warmupLeft: "\u9884\u70ed\u5269\u4f59",
+            second: "\u79d2",
+            dynamicThreshold: "\u52a8\u6001\u9608\u503c",
+            warmupGuard: "\u9884\u70ed\u4fdd\u62a4",
+            normal: "\u6b63\u5e38",
+            warning: "\u544a\u8b66",
+            critical: "\u4e25\u91cd",
+            recovery: "\u6062\u590d",
+            connected: "\u5df2\u8fde\u63a5",
+            disconnected: "\u8fde\u63a5\u65ad\u5f00"
+        };
+
+        const ctx = document.getElementById("trafficChart").getContext("2d");
+        const chart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: "#4b5563",
+                            filter: (item, chartData) => {
+                                const dataset = chartData.datasets[item.datasetIndex];
+                                return !dataset?.legendHidden;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "#6b7280", maxTicksLimit: 10 },
+                        grid: { color: "#e5e7eb" }
+                    },
+                    y: {
+                        ticks: {
+                            color: "#6b7280",
+                            callback: (value) => value.toFixed(2) + " MB/s"
+                        },
+                        grid: { color: "#e5e7eb" }
+                    }
+                }
+            }
+        });
+
+        function connectWebSocket() {
+            ws = new WebSocket("ws://localhost:8080/ws");
+
+            ws.onopen = () => {
+                updateStatus(true);
+                clearTimeout(reconnectTimer);
+                loadNICList();
+                requestActiveNICs();
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleMessage(data);
+                } catch (error) {
+                    console.error("WebSocket message handling failed:", error, event.data);
+                }
+            };
+
+            ws.onerror = () => {
+                updateStatus(false);
+            };
+
+            ws.onclose = () => {
+                updateStatus(false);
+                reconnectTimer = setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        function handleMessage(data) {
+            switch (data.type) {
+                case "realtime_data":
+                    updateTrafficData(data.data);
+                    break;
+                case "alert":
+                    showAlert(data.data);
+                    break;
+                case "active_nics":
+                    updateMonitoringNICs(data.nics);
+                    break;
+                case "error":
+                    console.error(data.message);
+                    break;
+            }
+        }
+
+        async function loadNICList() {
+            try {
+                const response = await fetch("/api/nics");
+                const data = await response.json();
+                availableNICs = data.nics || [];
+                renderNICList();
+            } catch (error) {
+                console.error(error);
+                document.getElementById("nicList").innerHTML =
+                    `<div class="empty-state">${TEXT.loadNicFail}</div>`;
+            }
+        }
+
+        function renderNICList() {
+            const container = document.getElementById("nicList");
+            if (availableNICs.length === 0) {
+                container.innerHTML = `<div class="empty-state">${TEXT.noNic}</div>`;
+                return;
+            }
+
+            container.innerHTML = availableNICs.map((nic) => {
+                const isMonitoring = monitoringNICs.has(nic.name);
+                return `
+                    <div class="nic-item ${isMonitoring ? "monitoring" : ""}"
+                         onclick="toggleNIC('${escapeForAttr(nic.name)}')">
+                        <input type="checkbox"
+                               class="nic-checkbox"
+                               id="nic_${escapeForId(nic.name)}"
+                               ${isMonitoring ? "checked" : ""}
+                               onclick="event.stopPropagation()">
+                        <div class="nic-name">${escapeHtml(nic.name)}</div>
+                        ${isMonitoring ? `<div class="nic-status">${TEXT.monitoring}</div>` : ""}
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function escapeForAttr(value) {
+            return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+        }
+
+        function escapeForId(value) {
+            return String(value).replace(/[^a-zA-Z0-9_-]/g, "_");
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function getNicCheckboxId(nicName) {
+            return `nic_${escapeForId(nicName)}`;
+        }
+
+        function toggleNIC(nicName) {
+            const checkbox = document.getElementById(getNicCheckboxId(nicName));
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+        }
+
+        function getSelectedNICs() {
+            return availableNICs
+                .filter((nic) => document.getElementById(getNicCheckboxId(nic.name))?.checked)
+                .map((nic) => nic.name);
+        }
+
+        function startMonitoring() {
+            const selected = getSelectedNICs();
+            if (selected.length === 0) {
+                alert(TEXT.selectNic);
+                return;
+            }
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                console.error("WebSocket is not ready.");
+                return;
+            }
+
+            ws.send(JSON.stringify({
+                action: "start_monitor",
+                nics: selected
+            }));
+        }
+
+        function stopAll() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                return;
+            }
+            ws.send(JSON.stringify({ action: "stop_all" }));
+        }
+
+        function requestActiveNICs() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                return;
+            }
+            ws.send(JSON.stringify({ action: "get_active_nics" }));
+        }
+
+        function updateMonitoringNICs(nics) {
+            monitoringNICs = new Set(nics);
+            renderNICList();
+            updateMonitoringCount();
+            updateChartDatasets();
+            updateChart();
+            renderThresholdList();
+        }
+
+        function updateMonitoringCount() {
+            document.getElementById("monitoringCount").textContent = monitoringNICs.size;
+        }
+
+        function getChartNicNames() {
+            const names = new Set(Array.from(monitoringNICs));
+            Object.keys(latestNICMetrics).forEach((name) => names.add(name));
+            Object.keys(trafficData)
+                .filter((key) => key !== "labels")
+                .forEach((name) => names.add(name));
+            return Array.from(names);
+        }
+
+        function updateTrafficData(data) {
+            const now = new Date().toLocaleTimeString("zh-CN", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            });
+
+            if (!trafficData.labels) {
+                trafficData.labels = [];
+            }
+            trafficData.labels.push(now);
+            if (trafficData.labels.length > maxDataPoints) {
+                trafficData.labels.shift();
+            }
+
+            let totalTraffic = 0;
+            let monitoringStateChanged = false;
+            for (const [nicName, nicData] of Object.entries(data)) {
+                if (!nicData || typeof nicData !== "object") {
+                    continue;
+                }
+
+                if (!monitoringNICs.has(nicName)) {
+                    monitoringNICs.add(nicName);
+                    monitoringStateChanged = true;
+                }
+
+                if (!trafficData[nicName]) {
+                    trafficData[nicName] = [];
+                }
+                if (!trafficWarningThresholds[nicName]) {
+                    trafficWarningThresholds[nicName] = [];
+                }
+
+                const mbps = Number.isFinite(nicData.total_mbps) ? nicData.total_mbps : 0;
+                trafficData[nicName].push(mbps);
+                trafficWarningThresholds[nicName].push(getChartThresholdMbps(nicData));
+                latestNICMetrics[nicName] = nicData;
+                totalTraffic += mbps;
+
+                if (trafficData[nicName].length > maxDataPoints) {
+                    trafficData[nicName].shift();
+                }
+                if (trafficWarningThresholds[nicName].length > maxDataPoints) {
+                    trafficWarningThresholds[nicName].shift();
+                }
+            }
+
+            if (monitoringStateChanged) {
+                renderNICList();
+                updateMonitoringCount();
+            }
+
+            updateChartDatasets();
+            updateChart();
+            renderThresholdList();
+            document.getElementById("totalTraffic").textContent = totalTraffic.toFixed(2);
+
+            const allValues = Object.entries(trafficData)
+                .filter(([key, arr]) => key !== "labels" && Array.isArray(arr))
+                .flatMap(([, arr]) => arr)
+                .filter((value) => Number.isFinite(value));
+
+            if (allValues.length > 0) {
+                const peak = Math.max(...allValues);
+                const avg = allValues.reduce((a, b) => a + b, 0) / allValues.length;
+                document.getElementById("peakTraffic").textContent = peak.toFixed(2);
+                document.getElementById("avgTraffic").textContent = avg.toFixed(2);
+            } else {
+                document.getElementById("peakTraffic").textContent = "0.00";
+                document.getElementById("avgTraffic").textContent = "0.00";
+            }
+        }
+
+        function updateChartDatasets() {
+            const trafficColors = [
+                "#16a34a", "#15803d", "#059669", "#0f766e",
+                "#0284c7", "#2563eb", "#7c3aed", "#ca8a04"
+            ];
+
+            const datasetMap = new Map(
+                (chart.data.datasets || []).map((dataset) => [dataset.datasetKey, dataset])
+            );
+            const nextDatasets = [];
+
+            getChartNicNames().forEach((nic, index) => {
+                const trafficColor = trafficColors[index % trafficColors.length];
+                const values = [...(trafficData[nic] || [])];
+                const thresholds = [...(trafficWarningThresholds[nic] || [])];
+                const trafficKey = `${nic}::traffic`;
+                const thresholdKey = `${nic}::threshold`;
+
+                const trafficDataset = datasetMap.get(trafficKey) || {};
+                trafficDataset.datasetKey = trafficKey;
+                trafficDataset.label = `${nic} traffic`;
+                trafficDataset.data = values;
+                trafficDataset.borderColor = trafficColor;
+                trafficDataset.backgroundColor = trafficColor + "20";
+                trafficDataset.tension = 0.35;
+                trafficDataset.fill = false;
+                trafficDataset.borderWidth = 2;
+                trafficDataset.pointRadius = 2;
+                trafficDataset.pointHoverRadius = 4;
+                trafficDataset.showLine = true;
+                trafficDataset.spanGaps = false;
+                trafficDataset.pointBackgroundColor = trafficColor;
+                trafficDataset.pointBorderColor = trafficColor;
+                trafficDataset.legendHidden = false;
+
+                const thresholdDataset = datasetMap.get(thresholdKey) || {};
+                thresholdDataset.datasetKey = thresholdKey;
+                thresholdDataset.label = `${nic} threshold`;
+                thresholdDataset.data = thresholds;
+                thresholdDataset.borderColor = "#ef4444";
+                thresholdDataset.backgroundColor = "#ef444420";
+                thresholdDataset.tension = 0;
+                thresholdDataset.fill = false;
+                thresholdDataset.borderWidth = 2;
+                thresholdDataset.pointRadius = 0;
+                thresholdDataset.pointHoverRadius = 3;
+                thresholdDataset.showLine = true;
+                thresholdDataset.spanGaps = true;
+                thresholdDataset.pointBackgroundColor = "#ef4444";
+                thresholdDataset.pointBorderColor = "#ef4444";
+                thresholdDataset.legendHidden = false;
+
+                nextDatasets.push(trafficDataset, thresholdDataset);
+            });
+
+            chart.data.datasets = nextDatasets;
+        }
+
+        function updateChart() {
+            chart.data.labels = [...(trafficData.labels || [])];
+            try {
+                chart.update();
+            } catch (error) {
+                console.error("Chart update failed:", error);
+            }
+        }
+
+        function getChartThresholdMbps(nicData) {
+            const thresholds = nicData.thresholds || {};
+            const isWarmup = Number.isFinite(thresholds.warmup_remaining_s) &&
+                thresholds.warmup_remaining_s > 0;
+            if (isWarmup) {
+                if (Number.isFinite(thresholds.fixed_critical_mbps)) {
+                    return thresholds.fixed_critical_mbps;
+                }
+                if (Number.isFinite(thresholds.critical_mbps)) {
+                    return thresholds.critical_mbps;
+                }
+            }
+            if (Number.isFinite(thresholds.warning_mbps)) {
+                return thresholds.warning_mbps;
+            }
+            if (Number.isFinite(thresholds.fixed_warning_mbps)) {
+                return thresholds.fixed_warning_mbps;
+            }
+            return null;
+        }
+
+        function formatWarmupText(thresholds) {
+            if (!Number.isFinite(thresholds?.warmup_remaining_s) || thresholds.warmup_remaining_s <= 0) {
+                return "";
+            }
+            return `，${TEXT.warmupLeft} ${thresholds.warmup_remaining_s} ${TEXT.second}`;
+        }
+
+        function formatWarmupTextSafe(thresholds) {
+            if (!Number.isFinite(thresholds?.warmup_remaining_s) || thresholds.warmup_remaining_s <= 0) {
+                return "";
+            }
+            return `\uFF0C${TEXT.warmupLeft} ${thresholds.warmup_remaining_s} ${TEXT.second}`;
+        }
+
+        function showAlert(alert) {
+            const container = document.getElementById("alertContainer");
+            const emptyState = container.querySelector(".empty-state");
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const level = alert.level || "warning";
+            const icon = alert.state === "recovery" ? "OK" : (level === "critical" ? "!!" : "!");
+            const nicPrefix = alert.nic ? `[${escapeHtml(alert.nic)}] ` : "";
+
+            const alertDiv = document.createElement("div");
+            alertDiv.className = `alert ${level}`;
+            alertDiv.innerHTML = `
+                <div>${icon}</div>
+                <div class="alert-content">${nicPrefix}${escapeHtml(alert.message || "")}</div>
+                <div class="alert-close" onclick="this.parentElement.remove()">x</div>
+            `;
+
+            container.insertBefore(alertDiv, container.firstChild);
+
+            while (container.children.length > 6) {
+                container.lastChild.remove();
+            }
+
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.remove();
+                }
+            }, 12000);
+        }
+
+        function renderThresholdList() {
+            const container = document.getElementById("thresholdList");
+            const names = Array.from(monitoringNICs).filter((name) => latestNICMetrics[name]);
+
+            if (names.length === 0) {
+                container.innerHTML = `<div class="empty-state">${TEXT.noData}</div>`;
+                return;
+            }
+
+            container.innerHTML = names.map((name) => {
+                const nicData = latestNICMetrics[name];
+                const thresholds = nicData.thresholds || {};
+                const baseline = nicData.baseline || {};
+                const alertState = nicData.alert_state || {};
+                const mode = thresholds.alerting_mode || "dynamic";
+                const warmupText = Number.isFinite(thresholds.warmup_remaining_s) &&
+                    thresholds.warmup_remaining_s > 0
+                    ? `，${TEXT.warmupLeft} ${thresholds.warmup_remaining_s} ${TEXT.second}`
+                    : "";
+
+                return `
+                    <div class="threshold-item">
+                        <div class="threshold-header">
+                            <div class="threshold-name">${escapeHtml(name)}</div>
+                            <div class="threshold-mode">${translateAlertMode(mode)}${formatWarmupTextSafe(thresholds)}</div>
+                        </div>
+                        <div class="threshold-grid">
+                            <div>${TEXT.currentTraffic}: ${formatMbps(nicData.total_mbps)}</div>
+                            <div>${TEXT.warningThreshold}: ${formatMbps(thresholds.warning_mbps)}</div>
+                            <div>${TEXT.criticalThreshold}: ${formatMbps(thresholds.critical_mbps)}</div>
+                            <div>${TEXT.median}: ${formatMbps(baseline.median_mbps)}</div>
+                            <div>P95: ${formatMbps(baseline.p95_mbps)}</div>
+                            <div>MAD: ${formatMbps(baseline.mad_mbps)}</div>
+                            <div>${TEXT.sampleCount}: ${baseline.sample_count || 0}</div>
+                            <div>${TEXT.state}: ${translateAlertState(alertState.level || "normal")}</div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function formatMbps(value) {
+            return `${Number.isFinite(value) ? value.toFixed(2) : "0.00"} MB/s`;
+        }
+
+        function translateAlertState(state) {
+            switch (state) {
+                case "warning":
+                    return TEXT.warning;
+                case "critical":
+                    return TEXT.critical;
+                case "recovery":
+                    return TEXT.recovery;
+                default:
+                    return TEXT.normal;
+            }
+        }
+
+        function translateAlertMode(mode) {
+            switch (mode) {
+                case "fixed_critical_only":
+                    return TEXT.warmupGuard;
+                default:
+                    return TEXT.dynamicThreshold;
+            }
+        }
+
+        function updateStatus(connected) {
+            const dot = document.getElementById("statusDot");
+            const text = document.getElementById("statusText");
+
+            if (connected) {
+                dot.className = "status-dot connected";
+                text.textContent = TEXT.connected;
+            } else {
+                dot.className = "status-dot disconnected";
+                text.textContent = TEXT.disconnected;
+            }
+        }
+
+        window.onload = () => {
+            connectWebSocket();
+        };
+    </script>
+</body>
+</html>

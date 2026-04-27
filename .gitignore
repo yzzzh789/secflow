@@ -1,0 +1,66 @@
+# 数据文件
+data/*.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal
+*.db
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+data/*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Runtime artifacts
+.gocache/
+.gotmp/
+.ruff_cache/
+.runtime/
+.verifycache/
+.claude/
+verifycache/
+traffic_monitor/__chrome_profile/
+traffic_monitor/__edge_profile/
+traffic_monitor/__pycache__/
+traffic_monitor/.gocache_traffic/
+traffic_monitor/verifycache/
+traffic_monitor/*.bak
+*.dmp
+*.pma
+data/website_security_state.json

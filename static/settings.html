@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 设置 | 网络安全分析系统</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .settings-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .settings-card h2 {
+            margin-bottom: 24px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .form-group .hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        select.form-control {
+            cursor: pointer;
+        }
+
+        .provider-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .provider-option {
+            background: transparent;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .provider-option:hover {
+            background: rgba(59, 130, 246, 0.05);
+            border-color: var(--primary-color);
+        }
+
+        .provider-option.active {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .provider-option .icon {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .provider-option .name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .test-result {
+            margin-top: 16px;
+            padding: 16px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .test-result.success {
+            display: block;
+            background: #ecfdf5;
+            border: 1px solid #d1fae5;
+            color: #059669;
+        }
+
+        .test-result.error {
+            display: block;
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
+            color: #dc2626;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 24px 0;
+        }
+
+        /* Conditional fields */
+        .conditional-field {
+            display: none;
+        }
+
+        .conditional-field.visible {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SecFlow</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">总览</a></li>
+                <li><a href="analyzer.html" class="nav-link">威胁检测</a></li>
+                <li><a href="report.html" class="nav-link">行为分析</a></li>
+                <li><a href="lan_monitor.html" class="nav-link">局域网监控</a></li>
+                <li><a href="nic_traffic.html" class="nav-link">网卡流量</a></li>
+                <li><a href="traffic_monitor.html" class="nav-link">流量监控</a></li>
+                <li><a href="website_security.html" class="nav-link">网站安全</a></li>
+                <li><a href="settings.html" class="nav-link active">设置</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="settings-container">
+            <section class="page-header" style="margin-bottom: 2rem; text-align: center;">
+                <h1>AI 模型配置</h1>
+                <p>配置用于威胁检测和行为分析的 AI 服务</p>
+            </section>
+
+            <div class="settings-card">
+                <h2>选择 AI 提供商</h2>
+                <div class="provider-grid" id="provider-grid">
+                    <div class="provider-option active" data-provider="ollama">
+                        <div class="name">Ollama</div>
+                    </div>
+                    <div class="provider-option" data-provider="openai">
+                        <div class="name">OpenAI</div>
+                    </div>
+                    <div class="provider-option" data-provider="deepseek">
+                        <div class="name">DeepSeek</div>
+                    </div>
+                    <div class="provider-option" data-provider="nvidia">
+                        <div class="name">NVIDIA</div>
+                    </div>
+                    <div class="provider-option" data-provider="custom">
+                        <div class="name">自定义</div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- API Key (for cloud providers) -->
+                <div class="form-group conditional-field" id="api-key-group">
+                    <label for="api-key">API 密钥</label>
+                    <input type="password" id="api-key" class="form-control" placeholder="sk-xxxxxxxxxxxxxxxx">
+                    <div class="hint">您的 API 密钥将仅保存在本地浏览器中</div>
+                </div>
+
+                <!-- API Base URL (for ollama/custom) -->
+                <div class="form-group conditional-field" id="api-base-group">
+                    <label for="api-base">API 地址</label>
+                    <input type="text" id="api-base" class="form-control" placeholder="http://localhost:11434">
+                    <div class="hint" id="api-base-hint">Ollama 默认地址为 http://localhost:11434</div>
+                </div>
+
+                <!-- Model Name -->
+                <div class="form-group">
+                    <label for="model-name">模型名称</label>
+                    <input type="text" id="model-name" class="form-control" placeholder="deepseek-r1:8b">
+                    <div class="hint" id="model-hint">推荐模型：deepseek-r1:8b (Ollama)</div>
+                </div>
+
+                <div class="btn-row">
+                    <button id="test-btn" class="btn btn-secondary">🔌 测试连接</button>
+                    <button id="save-btn" class="btn btn-primary">💾 保存设置</button>
+                </div>
+
+                <div class="test-result" id="test-result">
+                    <span class="icon"></span>
+                    <span class="message"></span>
+                </div>
+            </div>
+
+            <div class="settings-card" style="background: rgba(122, 162, 247, 0.05);">
+                <h2>💡 提示</h2>
+                <ul style="color: #a9b1d6; line-height: 1.8; padding-left: 20px;">
+                    <li><strong>Ollama</strong>：本地运行的开源 LLM，无需 API 密钥</li>
+                    <li><strong>OpenAI</strong>：支持 GPT-3.5/GPT-4，需要 API 密钥</li>
+                    <li><strong>DeepSeek</strong>：高性价比的国产大模型</li>
+                    <li><strong>NVIDIA NIM</strong>：企业级推理服务</li>
+                    <li><strong>自定义</strong>：兼容 OpenAI API 格式的任意服务</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+
+</html>

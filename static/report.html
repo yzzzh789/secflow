@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上网行为分析审计 | SecFlow</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background: #ffffff;
+        }
+
+        .page-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .panel {
+            background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+        }
+
+        .control-grid,
+        .filter-grid,
+        .stats-grid,
+        .chart-grid,
+        .report-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .control-grid {
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            align-items: end;
+        }
+
+        .filter-grid {
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            align-items: end;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        }
+
+        .chart-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .report-grid {
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            align-items: end;
+        }
+
+        .audit-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .audit-table th,
+        .audit-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .audit-table th {
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        .muted {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .pill-low {
+            background: rgba(34, 197, 94, 0.14);
+            color: #4ade80;
+        }
+
+        .pill-medium {
+            background: rgba(250, 204, 21, 0.14);
+            color: #facc15;
+        }
+
+        .pill-high {
+            background: rgba(248, 113, 113, 0.16);
+            color: #f87171;
+        }
+
+        .metric-card {
+            padding: 16px;
+            border-radius: 16px;
+            background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        }
+
+        .metric-label {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .metric-value {
+            margin-top: 8px;
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .live-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .live-card {
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            background: #ffffff;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        }
+
+        .live-card-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .live-card-title {
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .live-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .mini-chip {
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 12px;
+        }
+
+        .bar-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .bar-row {
+            display: grid;
+            gap: 6px;
+        }
+
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 13px;
+            color: #1e293b;
+        }
+
+        .bar-track {
+            width: 100%;
+            height: 10px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #38bdf8, #22c55e);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .status-text {
+            color: #2563eb;
+            font-size: 13px;
+        }
+
+        .empty-box {
+            padding: 24px;
+            border-radius: 16px;
+            text-align: center;
+            color: #64748b;
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            .panel-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SecFlow</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">总览</a></li>
+                <li><a href="analyzer.html" class="nav-link">威胁检测</a></li>
+                <li><a href="report.html" class="nav-link active">行为分析</a></li>
+                <li><a href="lan_monitor.html" class="nav-link">局域网监控</a></li>
+                <li><a href="nic_traffic.html" class="nav-link">网卡流量</a></li>
+                <li><a href="traffic_monitor.html" class="nav-link">流量监控</a></li>
+                <li><a href="website_security.html" class="nav-link">网站安全</a></li>
+                <li><a href="settings.html" class="nav-link">设置</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <section class="page-header">
+            <h1>上网行为分析与审计</h1>
+            <p>实时抓取会话、审计搜索行为、查看 Top N 排行、统计违规事件，并按周/月生成 JSON 报表。</p>
+        </section>
+
+        <div class="page-grid">
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h3>实时采集</h3>
+                        <div class="muted">启动行为分析后，实时会话摘要会出现在下方，数据库同时持续写入审计日志。</div>
+                    </div>
+                    <div id="live-status" class="status-text">未启动</div>
+                </div>
+                <div class="control-grid">
+                    <div class="form-group">
+                        <label for="interface-select">网卡接口</label>
+                        <select id="interface-select" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="time-limit">娱乐时限（分钟）</label>
+                        <input id="time-limit" class="form-control" type="number" min="1" max="240" value="30">
+                    </div>
+                    <div class="section-actions">
+                        <button id="start-btn" class="btn btn-primary">开始采集</button>
+                        <button id="stop-btn" class="btn btn-danger">停止采集</button>
+                        <button id="refresh-all-btn" class="btn btn-secondary">刷新审计数据</button>
+                    </div>
+                </div>
+                <div id="live-sessions" class="live-list" style="margin-top:16px;"></div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h3>周报 / 月报</h3>
+                        <div class="muted">报表生成后写入 <code>data/reports/</code>，并登记到 <code>report_exports</code>。</div>
+                    </div>
+                </div>
+                <div class="report-grid">
+                    <div class="form-group">
+                        <label for="report-type-select">下载报表类型</label>
+                        <select id="report-type-select" class="form-control">
+                            <option value="weekly">周报</option>
+                            <option value="monthly">月报</option>
+                        </select>
+                    </div>
+                    <div class="section-actions">
+                        <button id="generate-weekly-btn" class="btn btn-primary">生成周报</button>
+                        <button id="generate-monthly-btn" class="btn btn-primary">生成月报</button>
+                        <button id="download-latest-btn" class="btn btn-secondary">下载最新报表</button>
+                    </div>
+                    <div id="latest-report-meta" class="muted"></div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h3>上网日志查询</h3>
+                        <div class="muted">按时间、源 IP、域名、分类筛选 <code>web_access_logs</code>。</div>
+                    </div>
+                </div>
+                <div class="filter-grid">
+                    <div class="form-group">
+                        <label for="web-start">开始时间</label>
+                        <input id="web-start" class="form-control" type="datetime-local">
+                    </div>
+                    <div class="form-group">
+                        <label for="web-end">结束时间</label>
+                        <input id="web-end" class="form-control" type="datetime-local">
+                    </div>
+                    <div class="form-group">
+                        <label for="web-src-ip">源 IP</label>
+                        <input id="web-src-ip" class="form-control" type="text" placeholder="192.168.1.10">
+                    </div>
+                    <div class="form-group">
+                        <label for="web-domain">域名</label>
+                        <input id="web-domain" class="form-control" type="text" placeholder="github.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="web-category">分类</label>
+                        <select id="web-category" class="form-control">
+                            <option value="">全部</option>
+                            <option value="网站">网站</option>
+                            <option value="视频">视频</option>
+                            <option value="社交">社交</option>
+                            <option value="IM">IM</option>
+                            <option value="邮箱">邮箱</option>
+                            <option value="网盘">网盘</option>
+                            <option value="开发工具">开发工具</option>
+                        </select>
+                    </div>
+                    <div class="section-actions">
+                        <button id="web-query-btn" class="btn btn-primary">查询日志</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="audit-table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>源 IP</th>
+                                <th>域名</th>
+                                <th>应用/分类</th>
+                                <th>请求数</th>
+                                <th>流量</th>
+                                <th>证据级别</th>
+                            </tr>
+                        </thead>
+                        <tbody id="web-log-body"></tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button id="web-prev-btn" class="btn btn-secondary">上一页</button>
+                    <span id="web-page-info" class="muted"></span>
+                    <button id="web-next-btn" class="btn btn-secondary">下一页</button>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h3>搜索记录审计</h3>
+                        <div class="muted">按关键词、搜索引擎、来源 IP 查询 <code>search_audit_logs</code>。</div>
+                    </div>
+                </div>
+                <div class="filter-grid">
+                    <div class="form-group">
+                        <label for="search-start">开始时间</label>
+                        <input id="search-start" class="form-control" type="datetime-local">
+                    </div>
+                    <div class="form-group">
+                        <label for="search-end">结束时间</label>
+                        <input id="search-end" class="form-control" type="datetime-local">
+                    </div>
+                    <div class="form-group">
+                        <label for="search-src-ip">源 IP</label>
+                        <input id="search-src-ip" class="form-control" type="text" placeholder="192.168.1.10">
+                    </div>
+                    <div class="form-group">
+                        <label for="search-engine">搜索引擎</label>
+                        <select id="search-engine" class="form-control">
+                            <option value="">全部</option>
+                            <option value="baidu">Baidu</option>
+                            <option value="google">Google</option>
+                            <option value="bing">Bing</option>
+                            <option value="sogou">Sogou</option>
+                            <option value="so">360</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="search-keyword">关键词</label>
+                        <input id="search-keyword" class="form-control" type="text" placeholder="输入关键词">
+                    </div>
+                    <div class="section-actions">
+                        <button id="search-query-btn" class="btn btn-primary">查询搜索审计</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="audit-table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>源 IP</th>
+                                <th>域名</th>
+                                <th>搜索引擎</th>
+                                <th>关键词</th>
+                                <th>证据级别</th>
+                            </tr>
+                        </thead>
+                        <tbody id="search-log-body"></tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button id="search-prev-btn" class="btn btn-secondary">上一页</button>
+                    <span id="search-page-info" class="muted"></span>
+                    <button id="search-next-btn" class="btn btn-secondary">下一页</button>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h3>Top N 网站 / 应用排行</h3>
+                        <div class="muted">分别来自 <code>/api/audit/top-sites</code> 和 <code>/api/audit/top-apps</code>。</div>
+                    </div>
+                </div>
+                <div class="chart-grid">
+                    <div>
+                        <h4>Top 网站</h4>
+                        <div id="top-sites" class="bar-list"></div>
+                    </div>
+                    <div>
+                        <h4>Top 应用</h4>
+                        <div id="top-apps" class="bar-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h3>违规行为统计</h3>
+                        <div class="muted">基础规则包括黑名单域名、高风险关键词、非工作时段娱乐访问。</div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">违规总数</div>
+                        <div class="metric-value" id="violation-total">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">违规类型</div>
+                        <div id="violation-types" class="bar-list" style="margin-top:12px;"></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">严重级别</div>
+                        <div id="violation-severity" class="bar-list" style="margin-top:12px;"></div>
+                    </div>
+                </div>
+                <div style="margin-top:18px;">
+                    <h4>最近违规事件</h4>
+                    <div class="table-wrap">
+                        <table class="audit-table">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>源 IP</th>
+                                    <th>域名</th>
+                                    <th>类型</th>
+                                    <th>级别</th>
+                                    <th>原因</th>
+                                </tr>
+                            </thead>
+                            <tbody id="violation-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="task_runtime_client.js"></script>
+    <script src="report.js" defer></script>
+</body>
+
+</html>

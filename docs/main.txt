@@ -1,0 +1,319 @@
+package main
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"regexp" // 导入正则表达式库
+	"runtime"
+	"strings"
+	"sync"
+	"syscall"
+
+	"github.com/gorilla/websocket" //导入Gorilla WebSocket库
+)
+
+const PythonScriptName = "python"
+const ScriptPath = "./improved_packet_analyzer.py"
+const TrafficAnalyzerScript = "./traffic_analyzer.py"
+
+//defer 按顺序，假如由很多个defer，最后一个defer是第一个运行的
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true // 允许所有连接
+	},
+}
+
+// 正在运行的捕获进程
+type CaptureProcess struct {
+	cmd    *exec.Cmd  // 存储python进程、桥接python脚本进程
+	mu     sync.Mutex // 创建一个互斥锁
+	active bool       // 默认为false
+}
+
+// CaptureProcess结构体的IsActive使用方法
+func (cp *CaptureProcess) IsActive() bool {
+	cp.mu.Lock()         //获取互斥锁 确保线程的安全
+	defer cp.mu.Unlock() // defer关键字在函数返回之前执行cp.mu.unlock()
+	return cp.active     // 返回当前状态，看进程是否活跃
+}
+
+// CaptureProcess结构体的Stop使用方法
+func (cp *CaptureProcess) Stop() {
+	cp.mu.Lock()
+	defer cp.mu.Unlock()
+	if cp.active {
+		log.Println("Stopping python script process...")
+		// 在windows上我们不能只是终端，我们必须杀死进程树
+		if runtime.GOOS == "windows" {
+			killCmd := exec.Command("taskkill", "/F", "/T", "/PID", fmt.Sprintf("%d", cp.cmd.Process.Pid))
+			if err := killCmd.Run(); err != nil {
+				log.Printf("Failed to kill process tree: %v", err)
+			}
+		} else { // 在 liunx/macOs
+			if err := cp.cmd.Process.Signal(syscall.SIGINT); err != nil {
+				log.Printf("Failed to send SIGINT, trying to kill: %v", err)
+				if killErr := cp.cmd.Process.Kill(); killErr != nil {
+					log.Printf("Failed to kill process: %v", killErr)
+				}
+			}
+		}
+		cp.active = false
+	}
+}
+
+// Interface 代表单个网络接口
+type Interface struct {
+	Name    string `json:"name"`
+	RawName string `json:"rawName"`
+}
+
+// handleGetInterfaces 执行python脚本来列出网络接口
+func handleGetInterfaces(w http.ResponseWriter, r *http.Request) {
+	log.Println("Request received for /api/interfaces")
+	cmd := exec.Command(PythonScriptName, ScriptPath, "list-interfaces")
+	cmd.Env = append(os.Environ(), "PYTHONIOENCODING=UTF-8")
+
+	output, err := cmd.CombinedOutput() //第一个返回值是output，第二个返回值是error
+	if err != nil {                     // 如果执行python脚本失败
+		log.Printf("Error executing python script: %s\nOutput: %s", err, string(output))
+		http.Error(w, "执行脚本失败", http.StatusInternalServerError)
+		return
+	}
+
+	// 解析输出
+	interfaces := []Interface{}
+	// 捕获简化名称和原始名称；regexp.MustCompile 接受一个正则表达式字符串并返回一个Regexp对象
+	re := regexp.MustCompile(`\s*\d+:\s*(.*?)\s*\(Raw Name:\s*(.*?)\)`) // 更名: \s*\d+:\s*(.*?)\s*\(Raw Name:\s*(.*?)\)
+	scanner := bufio.NewScanner(strings.NewReader(string(output)))
+	for scanner.Scan() {
+		matches := re.FindStringSubmatch(scanner.Text())
+		if len(matches) == 3 {
+			interfaces = append(interfaces, Interface{
+				Name:    strings.TrimSpace(matches[1]),
+				RawName: strings.TrimSpace(matches[2]),
+			})
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(interfaces); err != nil {
+		log.Printf("Error encoding interfaces to JSON: %s", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
+}
+
+// handleCapture处理websocket连接以进行数据包捕获
+func handleCapture(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil) // 升级HTTP连接为websocket连接
+	if err != nil {
+		log.Println("Upgrade error:", err)
+		return
+	}
+	defer conn.Close()
+
+	log.Println("WebSocket client connected")
+
+	captureProc := &CaptureProcess{}
+
+	// 清理功能以确保进程停止
+	defer captureProc.Stop()
+
+	for {
+		_, message, err := conn.ReadMessage() //第一个返回值是消息类型 所以不需要
+		if err != nil {
+			log.Println("Read error:", err)
+			break // 客户端断开连接时退出循环
+		}
+
+		var command map[string]string
+		if err := json.Unmarshal(message, &command); err != nil { //分号前面的就是注入map里的信息
+			log.Println("Invalid command format:", err)
+			continue
+		}
+
+		switch command["action"] { //判断条件 下面的命令能不能运行全看这个；根据action的值决定执行相应的操作
+		case "start":
+			if captureProc.IsActive() {
+				log.Println("Capture is already running.")
+				continue
+			}
+
+			iface := command["interface"]
+			count := command["count"]
+			port := command["port"]
+			if iface == "" || count == "" {
+				log.Println("Missing interface or count")
+				continue
+			}
+
+			// 构建命令参数
+			args := []string{ScriptPath, "capture", "-i", iface, "-c", count}
+			if port != "" {
+				args = append(args, "-p", port)
+			}
+			if host, ok := command["host"]; ok && host != "" {
+				args = append(args, "--host", host)
+			}
+			if model, ok := command["model"]; ok && model != "" {
+				args = append(args, "--model", model)
+			}
+			if apiType, ok := command["apiType"]; ok && apiType != "" {
+				args = append(args, "--api-type", apiType)
+			}
+			// 直接调用 exe，传入参数
+			log.Printf("Executing Python with args: %v", args)
+			cmd := exec.Command(PythonScriptName, args...)
+			cmd.Env = append(os.Environ(), "PYTHONIOENCODING=UTF-8")
+
+			captureProc.mu.Lock()
+			captureProc.cmd = cmd
+			captureProc.active = true
+			captureProc.mu.Unlock()
+
+			stdout, _ := cmd.StdoutPipe() // 第一个返回值捕获标准输出
+			stderr, _ := cmd.StderrPipe() // 第二个返回值捕获标准错误，但这是创建管道，很少失败所以忽略
+
+			if err := cmd.Start(); err != nil {
+				log.Printf("Error starting command: %v", err)
+				captureProc.Stop()
+				continue
+			}
+
+			// 将stdout/stderr 流回客户端的Goroutine
+			go func() {
+				// 将stdout和stderr结合起来
+				multiReader := bufio.NewScanner(io.MultiReader(stdout, stderr)) //io.MultiReader(stdout, stderr)创建一个组合读取器；bufio.NewScanner创建一个带缓冲的扫描器，用于从r中读取文本行。
+				for multiReader.Scan() {                                        //对multiReader进行逐行扫描
+					line := multiReader.Text() //获取当前行的文本
+					if err := conn.WriteMessage(websocket.TextMessage, []byte(line)); err != nil {
+						log.Println("Write error:", err)
+						break // 如果我们无法写信给客户端就停止
+					}
+				}
+
+				cmd.Wait() // 等待命令完成
+				log.Println("Python script finished.")
+				if err := conn.WriteMessage(websocket.TextMessage, []byte("---CAPTURE-FINISHED---")); err != nil {
+					log.Println("Write error on finish:", err)
+				}
+				captureProc.Stop()
+			}()
+
+		case "stop":
+			log.Println("Received stop command from client.")
+			captureProc.Stop()
+		}
+	}
+	log.Println("WebSocket client disconnected.")
+}
+
+// handleTrafficAnalysis 处理新的 AI 分析 websocket 连接
+func handleTrafficAnalysis(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println("Upgrade error:", err)
+		return
+	}
+	defer conn.Close()
+
+	log.Println("Traffic Analysis WebSocket connected")
+
+	captureProc := &CaptureProcess{}
+	defer captureProc.Stop()
+
+	for {
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			log.Println("Read error:", err)
+			break
+		}
+
+		var command map[string]string
+		if err := json.Unmarshal(message, &command); err != nil {
+			log.Println("Invalid command format:", err)
+			continue
+		}
+
+		switch command["action"] {
+		case "start":
+			if captureProc.IsActive() {
+				continue
+			}
+
+			iface := command["interface"]
+			model := command["model"]
+			host := command["host"] // Optional
+
+			if iface == "" {
+				continue
+			}
+
+			args := []string{TrafficAnalyzerScript, "-i", iface}
+			if model != "" {
+				args = append(args, "--model", model)
+			}
+			if host != "" {
+				args = append(args, "--host", host)
+			}
+
+			log.Printf("Starting Traffic Analyzer: %v", args)
+			cmd := exec.Command(PythonScriptName, args...)
+			cmd.Env = append(os.Environ(), "PYTHONIOENCODING=UTF-8")
+
+			captureProc.mu.Lock()
+			captureProc.cmd = cmd
+			captureProc.active = true
+			captureProc.mu.Unlock()
+
+			stdout, _ := cmd.StdoutPipe()
+			stderr, _ := cmd.StderrPipe()
+
+			if err := cmd.Start(); err != nil {
+				log.Printf("Error starting analyzer: %v", err)
+				captureProc.Stop()
+				continue
+			}
+
+			go func() {
+				multiReader := bufio.NewScanner(io.MultiReader(stdout, stderr))
+				for multiReader.Scan() {
+					line := multiReader.Text()
+					if err := conn.WriteMessage(websocket.TextMessage, []byte(line)); err != nil {
+						break
+					}
+				}
+				cmd.Wait()
+				captureProc.Stop()
+			}()
+
+		case "stop":
+			captureProc.Stop()
+		}
+	}
+}
+
+func main() {
+	// 从“static”目录提供静态文件
+	fs := http.FileServer(http.Dir("./static")) //提供前端静态页面
+	http.Handle("/", fs)
+
+	// 获取接口的API端点
+	http.HandleFunc("/api/interfaces", handleGetInterfaces)
+
+	// 用于捕获的websocket端点
+	http.HandleFunc("/ws/capture", handleCapture)
+	// 新增: 用于 AI 流量分析的 websocket 端点
+	http.HandleFunc("/ws/report", handleTrafficAnalysis)
+
+	log.Println("Starting server on http://localhost:9090 (NEW VERSION)")
+	if err := http.ListenAndServe(":9090", nil); err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+}

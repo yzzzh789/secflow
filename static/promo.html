@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecFlow | 本地化网络安全运营工作台</title>
+    <meta name="description" content="SecFlow 将威胁检测、行为分析、局域网监控、网卡流量监控与网站安全监测整合为一套本地化安全运营工作台。">
+    <link rel="stylesheet" href="landing.css">
+</head>
+
+<body class="landing-body">
+    <div class="landing-grid"></div>
+    <div class="landing-orb landing-orb-left"></div>
+    <div class="landing-orb landing-orb-right"></div>
+
+    <header class="landing-header">
+        <nav class="landing-nav">
+            <a class="brand" href="index.html" aria-label="SecFlow 首页">
+                <span class="brand-mark">SF</span>
+                <span class="brand-text">SecFlow</span>
+            </a>
+            <div class="landing-nav-links">
+                <a href="#overview">产品概览</a>
+                <a href="#capabilities">能力矩阵</a>
+                <a href="#architecture">架构方式</a>
+                <a href="#live">实时态势</a>
+                <a href="#scenarios">适用场景</a>
+                <a href="index.html">进入控制台</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero reveal" id="overview">
+            <div class="hero-copy">
+                <div class="eyebrow">Local AI Security Operations Desk</div>
+                <h1>把威胁检测、流量观测、内网研判与网站巡检，收进一个真正可上线的安全工作台。</h1>
+                <p class="hero-text">
+                    SecFlow 面向攻防演练、竞赛保障、内网巡检与日常运维。它不是单点脚本集合，而是一套由
+                    Go 后端、Python 分析引擎、WebSocket 实时通道和 SQLite 留痕能力组成的本地化安全产品界面，
+                    让“发现、判断、定位、验证、复盘”在同一套工作流中完成。
+                </p>
+
+                <div class="hero-actions">
+                    <a class="landing-btn landing-btn-primary" href="index.html">进入总览控制台</a>
+                    <a class="landing-btn landing-btn-secondary" href="#capabilities">查看能力矩阵</a>
+                    <a class="landing-btn landing-btn-ghost" href="secflow_product_brochure.pdf">下载 PDF</a>
+                </div>
+
+                <div class="hero-proof">
+                    <span>本地部署</span>
+                    <span>AI 辅助研判</span>
+                    <span>WebSocket 秒级回传</span>
+                    <span>SQLite 证据留痕</span>
+                    <span>本机直接运行</span>
+                </div>
+
+                <div class="hero-summary-grid">
+                    <article class="summary-tile">
+                        <strong>5</strong>
+                        <span>大能力面统一整合</span>
+                    </article>
+                    <article class="summary-tile">
+                        <strong>1</strong>
+                        <span>套总览控制台贯穿全部模块</span>
+                    </article>
+                    <article class="summary-tile">
+                        <strong>Go + Python</strong>
+                        <span>编排层与分析引擎双栈协同</span>
+                    </article>
+                    <article class="summary-tile">
+                        <strong>本地数据库</strong>
+                        <span>支持事件沉淀、查询与复盘</span>
+                    </article>
+                </div>
+            </div>
+
+            <div class="hero-panel reveal">
+                <div class="panel-shell">
+                    <div class="panel-topline">
+                        <div>
+                            <span class="panel-label">Live Product Overview</span>
+                            <h2 class="panel-title">当前系统态势</h2>
+                        </div>
+                        <span class="panel-time" id="generatedAtLabel">等待同步</span>
+                    </div>
+
+                    <div class="metric-grid">
+                        <article class="metric-card">
+                            <span>监测覆盖率</span>
+                            <strong id="metricCoverage">读取中</strong>
+                        </article>
+                        <article class="metric-card">
+                            <span>累计报文</span>
+                            <strong id="metricPackets">0</strong>
+                        </article>
+                        <article class="metric-card">
+                            <span>威胁事件</span>
+                            <strong id="metricThreats">0</strong>
+                        </article>
+                        <article class="metric-card">
+                            <span>活跃网卡</span>
+                            <strong id="metricNics">0</strong>
+                        </article>
+                    </div>
+
+                    <div class="panel-section">
+                        <div class="section-kicker">Recent Signals</div>
+                        <div class="event-stack" id="landingEvents">
+                            <div class="empty-inline">正在连接产品概览接口...</div>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <div class="section-kicker">Module Status</div>
+                        <div class="mini-module-list" id="landingModules">
+                            <div class="empty-inline">模块状态将在这里显示。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="command-strip reveal">
+            <article>
+                <strong>可落地</strong>
+                <p>宣传页不是脱离产品的空壳，实时态势直接读取当前系统概览接口，适合讲解、演示与正式展示同时使用。</p>
+            </article>
+            <article>
+                <strong>可联动</strong>
+                <p>威胁检测、行为分析、局域网监控、网卡流量、网站安全五类能力在一个信息结构中组织，而不是分散跳转的独立脚本。</p>
+            </article>
+            <article>
+                <strong>可留痕</strong>
+                <p>核心事件与指标可写入本地 SQLite，便于日后查询、比对、复盘和形成运维或演练报告。</p>
+            </article>
+        </section>
+
+        <section class="section reveal" id="capabilities">
+            <div class="section-heading">
+                <span class="section-tag">Capability Matrix</span>
+                <h2>不是“看一个点”，而是围绕发现、判断、定位、验证构建的完整安全工作流。</h2>
+                <p>
+                    宣传重点不应只落在抓包或告警，而应突出多模块之间的协同关系。SecFlow 将五个能力面组织为一个统一的运营工作台，
+                    既适合现场演示，也适合真正投入日常使用。
+                </p>
+            </div>
+
+            <div class="capability-grid">
+                <article class="capability-card capability-card-featured">
+                    <div class="capability-head">
+                        <span class="capability-index">01</span>
+                        <h3>威胁检测</h3>
+                    </div>
+                    <p>本地抓包结合规则与 AI 研判，快速识别异常报文、端口扫描、SQL 注入、XSS、可疑连接与高风险会话。</p>
+                    <ul class="feature-list">
+                        <li>支持端口过滤、接口选择和抓包数量控制</li>
+                        <li>支持本地模型或兼容 API 的 AI 分析方式</li>
+                        <li>可联动防火墙进行自动封禁或阻断</li>
+                    </ul>
+                    <a class="capability-link" href="analyzer.html">打开威胁检测</a>
+                </article>
+
+                <article class="capability-card">
+                    <div class="capability-head">
+                        <span class="capability-index">02</span>
+                        <h3>行为分析</h3>
+                    </div>
+                    <p>基于 DNS 与访问轨迹聚合用户会话，识别行为链、访问意图、风险域名与高频请求模式。</p>
+                    <ul class="feature-list">
+                        <li>输出会话标签、主域名、风险等级与请求数量</li>
+                        <li>可视化上网足迹，适合复盘与教学演示</li>
+                        <li>帮助从“访问行为”角度补充安全判断</li>
+                    </ul>
+                    <a class="capability-link" href="report.html">打开行为分析</a>
+                </article>
+
+                <article class="capability-card">
+                    <div class="capability-head">
+                        <span class="capability-index">03</span>
+                        <h3>局域网监控</h3>
+                    </div>
+                    <p>按 IP 构建资产画像、域名关联与风险评分，用于发现横向扩散、异常终端和高风险访问对象。</p>
+                    <ul class="feature-list">
+                        <li>统计各 IP 的访问域名、类别、字节量与时段</li>
+                        <li>输出高风险资产线索和近期风险事件</li>
+                        <li>适合内网排查、巡检与演练中的资产定位</li>
+                    </ul>
+                    <a class="capability-link" href="lan_monitor.html">打开局域网监控</a>
+                </article>
+
+                <article class="capability-card">
+                    <div class="capability-head">
+                        <span class="capability-index">04</span>
+                        <h3>网卡流量监控</h3>
+                    </div>
+                    <p>持续采集 RX/TX 吞吐与速率变化，基于动态基线进行阈值告警，直观看见突发流量与异常占用。</p>
+                    <ul class="feature-list">
+                        <li>支持多网卡选择、历史查询与实时趋势</li>
+                        <li>具备预热期、动态基线和恢复判断逻辑</li>
+                        <li>适合竞赛保障、带宽观测与故障排查</li>
+                    </ul>
+                    <a class="capability-link" href="nic_traffic.html">打开网卡流量</a>
+                </article>
+
+                <article class="capability-card capability-card-website">
+                    <div class="capability-head">
+                        <span class="capability-index">05</span>
+                        <h3>网站安全监测</h3>
+                    </div>
+                    <p>覆盖页面篡改、恶意脚本、敏感内容、可用性、安全基线和暴露面扫描，把 Web 巡检纳入统一工作台。</p>
+                    <ul class="feature-list">
+                        <li>监测 HTTP 状态、响应时间、SSL 到期与可用性</li>
+                        <li>检查页面哈希、恶意脚本和敏感暴露路径</li>
+                        <li>适合网站巡检、运营值守和对外演示</li>
+                    </ul>
+                    <a class="capability-link" href="website_security.html">打开网站安全</a>
+                </article>
+            </div>
+        </section>
+
+        <section class="section reveal" id="architecture">
+            <div class="section-heading">
+                <span class="section-tag">Architecture</span>
+                <h2>一条面向安全运营的产品链路，从采集到留痕，前后端都已经成型。</h2>
+                <p>
+                    这个项目的价值不只在于“做了什么监控”，还在于把多种监测结果统一汇聚到一个可访问、可管理、可展示的前端入口里，
+                    形成完整的产品化表达。
+                </p>
+            </div>
+
+            <div class="architecture-layout">
+                <article class="architecture-story">
+                    <div class="story-card">
+                        <span class="section-kicker">Product Spine</span>
+                        <h3>Go 负责统一服务编排，Python 负责监测与分析，Web 页面负责展示与操作。</h3>
+                        <p>
+                            SecFlow 通过 Go 后端集中提供静态页面、WebSocket、任务管理与聚合 API，
+                            再由 Python 分析脚本承担抓包、行为分析、局域网画像、网卡流量采集等监测任务，
+                            最终以统一的产品视图输出给值守人员、演示对象或汇报场景。
+                        </p>
+
+                        <div class="stack-board">
+                            <div class="stack-item">
+                                <strong>统一后端</strong>
+                                <span>Go 提供 API、WebSocket、任务恢复与多模块聚合</span>
+                            </div>
+                            <div class="stack-item">
+                                <strong>分析引擎</strong>
+                                <span>Python 负责抓包、流量采集、行为分析与局域网监测</span>
+                            </div>
+                            <div class="stack-item">
+                                <strong>证据留存</strong>
+                                <span>SQLite 记录报文事件、会话、资产画像与日志</span>
+                            </div>
+                            <div class="stack-item">
+                                <strong>交付方式</strong>
+                                <span>支持本地运行、静态页面展示与统一控制台交付</span>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pipeline-board">
+                    <div class="pipeline-step">
+                        <span>01</span>
+                        <h3>采集</h3>
+                        <p>从网卡、数据包、DNS、网站与局域网资产中抓取实时信号。</p>
+                    </div>
+                    <div class="pipeline-step">
+                        <span>02</span>
+                        <h3>分析</h3>
+                        <p>规则、统计与 AI 协同判断异常报文、会话意图和风险对象。</p>
+                    </div>
+                    <div class="pipeline-step">
+                        <span>03</span>
+                        <h3>联动</h3>
+                        <p>把威胁、行为、资产、带宽和网站巡检汇成同一个控制面板。</p>
+                    </div>
+                    <div class="pipeline-step">
+                        <span>04</span>
+                        <h3>告警</h3>
+                        <p>通过阈值、风险等级和异常状态给出可执行的提示与线索。</p>
+                    </div>
+                    <div class="pipeline-step">
+                        <span>05</span>
+                        <h3>留痕</h3>
+                        <p>沉淀到本地数据库，便于复盘、汇报和后续持续监测。</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="section live-section reveal" id="live">
+            <div class="section-heading">
+                <span class="section-tag">Runtime</span>
+                <h2>宣传页直接读取运行中的系统概览，不是静态样板，而是产品本身的实时窗口。</h2>
+                <p>
+                    页面会自动刷新产品概览，实时展示模块状态、资产线索、威胁分布和最近趋势。
+                    这样做的意义是：宣传展示与实际运行共用一套事实来源。
+                </p>
+            </div>
+
+            <div class="runtime-layout">
+                <aside class="live-summary-card">
+                    <div class="live-summary-head">
+                        <span class="live-dot"></span>
+                        <div>
+                            <strong id="liveCoverageHeadline">等待数据</strong>
+                            <p id="liveCoverageMeta">Go 服务启动后，这里会自动显示当前监测覆盖情况。</p>
+                        </div>
+                    </div>
+
+                    <div class="live-stat-grid">
+                        <div>
+                            <span>高风险资产</span>
+                            <strong id="metricAssets">0</strong>
+                        </div>
+                        <div>
+                            <span>行为会话</span>
+                            <strong id="metricBehaviors">0</strong>
+                        </div>
+                        <div>
+                            <span>健康模块</span>
+                            <strong id="metricHealthyModules">0</strong>
+                        </div>
+                        <div>
+                            <span>威胁占比</span>
+                            <strong id="metricThreatRate">0%</strong>
+                        </div>
+                        <div>
+                            <span>最近同步</span>
+                            <strong id="metricGeneratedAt">--</strong>
+                        </div>
+                        <div>
+                            <span>交付形态</span>
+                            <strong>本地运行</strong>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="runtime-stack">
+                    <section class="runtime-panel runtime-panel-wide">
+                        <div class="runtime-panel-header">
+                            <div>
+                                <span class="section-kicker">Module Board</span>
+                                <h3>模块运行视图</h3>
+                            </div>
+                        </div>
+                        <div class="live-module-board" id="liveModuleBoard">
+                            <div class="empty-board">模块状态将在这里显示。</div>
+                        </div>
+                    </section>
+
+                    <div class="runtime-grid">
+                        <section class="runtime-panel">
+                            <div class="runtime-panel-header">
+                                <div>
+                                    <span class="section-kicker">Threat Mix</span>
+                                    <h3>威胁类型分布</h3>
+                                </div>
+                            </div>
+                            <div class="threat-mix-list" id="threatMixList">
+                                <div class="empty-inline">等待威胁类型统计。</div>
+                            </div>
+                        </section>
+
+                        <section class="runtime-panel">
+                            <div class="runtime-panel-header">
+                                <div>
+                                    <span class="section-kicker">Asset Focus</span>
+                                    <h3>高风险资产线索</h3>
+                                </div>
+                            </div>
+                            <div class="asset-list" id="topAssetList">
+                                <div class="empty-inline">等待资产风险线索。</div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <section class="runtime-panel">
+                        <div class="runtime-panel-header">
+                            <div>
+                                <span class="section-kicker">7-Day Trend</span>
+                                <h3>最近 7 天事件趋势</h3>
+                            </div>
+                        </div>
+                        <div class="trend-strip" id="trendStrip">
+                            <div class="empty-inline">等待趋势数据。</div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+
+        <section class="section reveal" id="scenarios">
+            <div class="section-heading">
+                <span class="section-tag">Scenarios</span>
+                <h2>适合那些需要“马上看见、马上判断、马上解释”的安全现场。</h2>
+                <p>对外宣传时，最能打动人的不是技术列表，而是它能在哪些现场减少切换、提升判断速度并提供统一视图。</p>
+            </div>
+
+            <div class="scenario-grid">
+                <article class="scenario-card">
+                    <span class="scenario-tag">01</span>
+                    <h3>攻防演练与竞赛保障</h3>
+                    <p>快速观察当前威胁数量、带宽波动、可疑资产和异常会话，适合值守、应急切换和赛事期间实时展示。</p>
+                </article>
+                <article class="scenario-card">
+                    <span class="scenario-tag">02</span>
+                    <h3>内网巡检与安全运营</h3>
+                    <p>从资产画像、行为轨迹、吞吐变化到网站巡检，减少在多套工具与脚本之间来回切换。</p>
+                </article>
+                <article class="scenario-card">
+                    <span class="scenario-tag">03</span>
+                    <h3>网站安全值守</h3>
+                    <p>将篡改、恶意脚本、暴露面、可用性和 SSL 风险纳入统一监控面，适合对站点健康做持续巡检。</p>
+                </article>
+                <article class="scenario-card">
+                    <span class="scenario-tag">04</span>
+                    <h3>教学演示与产品路演</h3>
+                    <p>宣传页与控制台共用一套事实数据，既能讲清产品逻辑，也能直接展示运行中的真实系统状态。</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="cta-section reveal">
+            <div class="cta-card">
+                <span class="section-tag">Start Now</span>
+                <h2>先用宣传页讲清楚产品价值，再从总览控制台直接进入真实运行面。</h2>
+                <p>
+                    对外展示时使用宣传页，对内使用总览控制台和各专项页面。两者共享同一套产品叙事和同一套系统事实，
+                    不再需要准备两套互相脱节的展示材料。
+                </p>
+                <div class="hero-actions">
+                    <a class="landing-btn landing-btn-primary" href="index.html">进入总览控制台</a>
+                    <a class="landing-btn landing-btn-secondary" href="website_security.html">打开网站安全</a>
+                    <a class="landing-btn landing-btn-ghost" href="nic_traffic.html">查看网卡流量</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="landing-footer">
+        <div class="footer-brand">
+            <strong>SecFlow</strong>
+            <p>本地化网络安全运营工作台</p>
+        </div>
+        <div class="footer-links">
+            <a href="index.html">总览控制台</a>
+            <a href="analyzer.html">威胁检测</a>
+            <a href="lan_monitor.html">局域网监控</a>
+            <a href="website_security.html">网站安全</a>
+            <a href="secflow_product_brochure.pdf">PDF</a>
+        </div>
+    </footer>
+
+    <script src="landing.js"></script>
+</body>
+
+</html>

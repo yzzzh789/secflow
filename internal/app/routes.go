@@ -1,0 +1,41 @@
+package app
+
+import "net/http"
+
+func registerRoutes(mux *http.ServeMux) {
+	fs := http.FileServer(http.Dir("./static"))
+	mux.Handle("/", fs)
+
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/readyz", handleReadyz)
+	mux.HandleFunc("/api/runtime/config", handleRuntimeConfig)
+	mux.HandleFunc("/api/db-path", handleGetDBPath)
+	mux.HandleFunc("/api/product/overview", handleProductOverview)
+	mux.HandleFunc("/api/audit/web-logs", handleAuditWebLogs)
+	mux.HandleFunc("/api/audit/search-logs", handleAuditSearchLogs)
+	mux.HandleFunc("/api/audit/top-sites", handleAuditTopSites)
+	mux.HandleFunc("/api/audit/top-apps", handleAuditTopApps)
+	mux.HandleFunc("/api/audit/violations/stats", handleAuditViolationStats)
+	mux.HandleFunc("/api/reports/generate", handleGenerateAuditReport)
+	mux.HandleFunc("/api/reports/latest", handleLatestAuditReport)
+	mux.HandleFunc("/api/reports/download", handleDownloadAuditReport)
+	mux.HandleFunc("/api/runtime/threat", handleThreatRuntime)
+	mux.HandleFunc("/api/runtime/behavior", handleBehaviorRuntime)
+	mux.HandleFunc("/api/runtime/lan-monitor", handleLANRuntime)
+	mux.HandleFunc("/api/runtime/nic-monitor", handleNICMonitorRuntime)
+	mux.HandleFunc("/api/task/threat", handleThreatTaskControl)
+	mux.HandleFunc("/api/task/behavior", handleBehaviorTaskControl)
+	mux.HandleFunc("/api/task/lan-monitor", handleLANTaskControl)
+	mux.HandleFunc("/api/task/nic-monitor", handleNICTaskControl)
+	mux.HandleFunc("/api/interfaces", handleGetInterfaces)
+	mux.HandleFunc("/api/test-ai", handleTestAI)
+	mux.HandleFunc("/api/nic/list", handleGetNICList)
+	mux.HandleFunc("/api/website-security/state", handleWebsiteSecurityState)
+	mux.HandleFunc("/api/website-security/websites", handleWebsiteSecurityWebsites)
+	mux.HandleFunc("/api/website-security/check", handleWebsiteSecurityCheck)
+	mux.HandleFunc("/api/website-security/threats/clear", handleWebsiteSecurityClearThreats)
+	mux.HandleFunc("/ws/capture", handleCapture)
+	mux.HandleFunc("/ws/report", handleTrafficAnalysis)
+	mux.HandleFunc("/ws/lan-monitor", handleLANMonitor)
+	mux.HandleFunc("/ws/nic-monitor", handleNICMonitor)
+}

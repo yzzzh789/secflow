@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>局域网上网行为分析</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .container {
+            max-width: 1600px;
+            margin: 30px auto;
+        }
+
+        .header,
+        .control-panel,
+        .stat-card,
+        .reports-container {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .header {
+            padding: 30px;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            color: #2563eb;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #4b5563;
+            font-size: 14px;
+        }
+
+        .control-panel {
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+
+        .btn-start {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .btn-start:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-stop {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .btn-stop:hover {
+            background: #b91c1c;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            padding: 22px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #4b5563;
+            font-size: 13px;
+            margin-bottom: 8px;
+            letter-spacing: 0;
+        }
+
+        .stat-card .value {
+            font-size: 34px;
+            font-weight: 700;
+            color: #2563eb;
+        }
+
+        .reports-container {
+            padding: 28px;
+        }
+
+        .reports-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .reports-header h2 {
+            color: #111827;
+            font-size: 24px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 14px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+
+        .ip-report {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 18px;
+            border-left: 5px solid #2563eb;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .ip-report:hover {
+            transform: translateX(3px);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+        }
+
+        .ip-report.risk-high {
+            border-left-color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .ip-report.risk-medium {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .ip-report.risk-low {
+            border-left-color: #16a34a;
+            background: #f0fdf4;
+        }
+
+        .ip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .ip-address {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+            overflow-wrap: anywhere;
+        }
+
+        .risk-badge {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .risk-badge.high {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .risk-badge.medium {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        .risk-badge.low {
+            background: #16a34a;
+            color: #fff;
+        }
+
+        .ip-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .ip-stat {
+            background: #fff;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+        }
+
+        .ip-stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
+
+        .ip-stat-value {
+            font-size: 17px;
+            font-weight: 700;
+            color: #111827;
+            overflow-wrap: anywhere;
+        }
+
+        .category-breakdown,
+        .top-domains {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .category-breakdown h4,
+        .top-domains h4 {
+            font-size: 14px;
+            color: #4b5563;
+            margin-bottom: 10px;
+        }
+
+        .category-bars,
+        .domain-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .category-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-label {
+            min-width: 100px;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .category-progress {
+            flex: 1;
+            height: 18px;
+            background: #e5e7eb;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .category-fill {
+            height: 100%;
+            transition: width 0.4s;
+        }
+
+        .category-percentage {
+            min-width: 48px;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 700;
+            color: #2563eb;
+        }
+
+        .domain-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .domain-name {
+            flex: 1;
+            color: #111827;
+            font-weight: 500;
+            overflow-wrap: anywhere;
+        }
+
+        .domain-label {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .domain-count {
+            color: #4b5563;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .status-message {
+            color: #fff;
+            padding: 14px;
+            border-radius: 6px;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 56px 20px;
+            color: #6b7280;
+        }
+
+        .no-data svg {
+            width: 88px;
+            height: 88px;
+            margin-bottom: 18px;
+            opacity: 0.25;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .monitoring {
+            animation: pulse 2s infinite;
+        }
+
+        @media (max-width: 768px) {
+            .reports-header,
+            .ip-header,
+            .domain-item {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .domain-count,
+            .risk-badge {
+                white-space: normal;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SecFlow</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">总览</a></li>
+                <li><a href="analyzer.html" class="nav-link">威胁检测</a></li>
+                <li><a href="report.html" class="nav-link">行为分析</a></li>
+                <li><a href="lan_monitor.html" class="nav-link active">局域网监控</a></li>
+                <li><a href="nic_traffic.html" class="nav-link">网卡流量</a></li>
+                <li><a href="traffic_monitor.html" class="nav-link">流量监控</a></li>
+                <li><a href="website_security.html" class="nav-link">网站安全</a></li>
+                <li><a href="settings.html" class="nav-link">设置</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="header">
+            <h1>局域网上网行为分析系统</h1>
+            <p>实时监控局域网内设备的上网行为，识别娱乐、财经、社交、游戏、购物和恶意站点访问。</p>
+        </section>
+
+        <section class="control-panel" aria-label="局域网监控控制">
+            <div class="control-row">
+                <div class="control-group">
+                    <label for="interface">网络接口</label>
+                    <select id="interface">
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="threatIntel">威胁情报检测</label>
+                    <select id="threatIntel">
+                        <option value="enabled">启用</option>
+                        <option value="disabled">禁用</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <button id="startBtn" class="btn btn-start">开始监控</button>
+                </div>
+                <div class="control-group">
+                    <button id="stopBtn" class="btn btn-stop" disabled>停止监控</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="stats-grid" aria-label="局域网监控统计">
+            <div class="stat-card">
+                <h3>监控设备数</h3>
+                <div class="value" id="totalIPs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>高风险设备</h3>
+                <div class="value" style="color: #dc2626;" id="highRiskIPs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>中风险设备</h3>
+                <div class="value" style="color: #f59e0b;" id="mediumRiskIPs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>低风险设备</h3>
+                <div class="value" style="color: #16a34a;" id="lowRiskIPs">0</div>
+            </div>
+        </section>
+
+        <section class="reports-container" aria-label="设备行为报表">
+            <div class="reports-header">
+                <h2>设备行为报表</h2>
+                <div class="filter-buttons" role="group" aria-label="风险过滤">
+                    <button class="filter-btn active" data-filter="all">全部</button>
+                    <button class="filter-btn" data-filter="high">高风险</button>
+                    <button class="filter-btn" data-filter="medium">中风险</button>
+                    <button class="filter-btn" data-filter="low">低风险</button>
+                </div>
+            </div>
+            <div id="statusMessage"></div>
+            <div id="reportsContainer">
+                <div class="no-data">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <h3>等待开始监控</h3>
+                    <p>选择网络接口后点击开始监控。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="task_runtime_client.js"></script>
+    <script src="lan_monitor.js"></script>
+</body>
+</html>

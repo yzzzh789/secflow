@@ -1,0 +1,23 @@
+{
+  "reportType": "weekly",
+  "periodStart": "2026-04-10 00:00:00",
+  "periodEnd": "2026-04-16 21:18:22",
+  "generatedAt": "2026-04-16 21:18:22",
+  "summary": {
+    "webLogCount": 0,
+    "searchLogCount": 0,
+    "violationCount": 0,
+    "uniqueIPs": 0
+  },
+  "topSites": null,
+  "topApps": null,
+  "topKeywords": null,
+  "violations": {
+    "total": 0,
+    "byType": null,
+    "bySeverity": null,
+    "recent": null
+  },
+  "latestSearch": null,
+  "latestWebLogs": null
+}
